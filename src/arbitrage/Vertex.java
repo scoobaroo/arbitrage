@@ -13,5 +13,7 @@ public class Vertex {
         this.name=name;
         this.predecessor = null;
     }
-    
+    public String toString() {
+    		return name;
+    }
 }

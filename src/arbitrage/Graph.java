@@ -16,7 +16,7 @@ public class Graph {
 
     // The main function that finds shortest distances from src
     // to all other vertices using Bellman-Ford algorithm.  The
-    // function also detects negative weight cycle
+    // function also detects negative weight cycles
     void BellmanFord(Graph graph, Vertex source)
     {
 
@@ -131,7 +131,7 @@ public class Graph {
         return null;
     }
 
-    Vertex findSource(String name, ArrayList<Vertex> vertices){
+    Vertex findSource(String name){
         for( int i = 0; i<vertices.size();i++){
             Vertex v= vertices.get(i);
             if (v.name.equalsIgnoreCase(name))
