@@ -13,6 +13,7 @@ public class Vertex {
         this.name=name;
         this.predecessor = null;
     }
+    @Override
     public String toString() {
     		return name;
     }

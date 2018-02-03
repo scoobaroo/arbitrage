@@ -8,10 +8,15 @@ public class Graph {
     public ArrayList<Vertex> vertices;
     public ArrayList<Edge> edges;
     double inf = Double.POSITIVE_INFINITY;
+    
     public Graph(ArrayList<Vertex> vertices, ArrayList<Edge> edges) {
         super();
         this.vertices = vertices;
         this.edges = edges;
+        System.out.println("Graph vertices");
+        System.out.println(vertices);
+        System.out.println("Graph edges");
+        System.out.println(edges);
     }
 
     // The main function that finds shortest distances from src
@@ -19,11 +24,11 @@ public class Graph {
     // function also detects negative weight cycles
     void BellmanFord(Graph graph, Vertex source)
     {
-
         Vertex src = source;
         int i,j;
         vertices = graph.vertices;
         edges = graph.edges;
+ 
         HashMap<Vertex, Double> dist = new HashMap<Vertex, Double>(vertices.size());
         // Step 1: Initialize distances from src to all other
         // vertices as INFINITE
@@ -40,9 +45,11 @@ public class Graph {
                 Vertex u = edges.get(j).src;
                 Vertex v = edges.get(j).dest;
                 Edge e = edges.get(j);
-                if (dist.get(u) + e.weight < dist.get(v)) {
-                    dist.put(v, dist.get(u) + e.weight);
-                    v.predecessor = u;
+                if(u!=null && v!=null) {
+	                if (dist.get(u) + e.weight < dist.get(v)) {
+	                    dist.put(v, dist.get(u) + e.weight);
+	                    v.predecessor = u;
+	                }
                 }
              }
          }
@@ -56,17 +63,19 @@ public class Graph {
             Vertex u = edges.get(k).src;
             Vertex v = edges.get(k).dest;
             Edge e = edges.get(k);
-            if (dist.get(u)+e.weight<dist.get(v)){
-              totalCycles ++;
-              System.out.println("\n=================================================================================");
-              System.out.println("Graph contains negative weight cycle");
-              System.out.println("Cycle starts with " + v.name+ " connected to " + u.name);
-              path(u,v);
-              LinkedHashSet<Vertex> cycle = new LinkedHashSet<Vertex>();
-              while(cycle.add(v)){
-                  v=v.predecessor;
-              }
-              printCycle(cycle);
+            if(u!=null && v!=null) {
+	            if (dist.get(u)+e.weight<dist.get(v)){
+	              totalCycles++;
+	              System.out.println("\n=================================================================================");
+	              System.out.println("Graph contains negative weight cycle");
+	              System.out.println("Cycle starts with " + v.name+ " connected to " + u.name);
+	              path(u,v);
+	              LinkedHashSet<Vertex> cycle = new LinkedHashSet<Vertex>();
+	              while(cycle.add(v)){
+	                  v=v.predecessor;
+	              }
+	              printCycle(cycle);
+	            }
             }
         }
         System.out.println("\nThe number of negative cycles, or arbitrage opportunities detected were :"+totalCycles);
@@ -124,7 +133,7 @@ public class Graph {
     Edge findEdge(Vertex src, Vertex dest){
         for ( int i = 0; i < edges.size(); i++){
             Edge e = edges.get(i);
-            if(e.src == src && e.dest== dest){
+            if(e.src==src && e.dest== dest){
                 return e;
             }
         }

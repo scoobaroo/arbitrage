@@ -5,11 +5,13 @@ public class Edge {
     public Vertex dest;
     public double weight;
     public Edge(Vertex src, Vertex dest, double weight) {
-        this.src = src;
+    		this.src = src;
         this.dest = dest;
         this.weight = weight;
     }
-    public String toString() {
-    		return "Edge " + src.toString() + dest.toString();
-    }
+//    @Override
+//    public String toString() {
+//    		String s = "Edge " + src.toString() + dest.toString() + " with weight " + weight;
+//    		return s;
+//    }
 }
