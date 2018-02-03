@@ -11,7 +11,7 @@ public class Edge {
     }
 //    @Override
 //    public String toString() {
-//    		String s = "Edge " + src.toString() + dest.toString() + " with weight " + weight;
+//    		String s = "Edge " + this.src.toString() + this.dest.toString() + " with weight " + this.weight;
 //    		return s;
 //    }
 }

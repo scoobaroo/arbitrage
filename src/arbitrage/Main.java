@@ -148,7 +148,7 @@ public class Main {
         
         System.out.println(cryptocurrencies);
         JSONParser parser = new JSONParser();
-        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/data.json"));
+        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/goodData36MB.json"));
         JSONArray list = new JSONArray();
         list = (JSONArray) a.get("Tickers");
         int listSize = list.size();
@@ -179,7 +179,6 @@ public class Main {
 	            		System.out.println(individualTicker.get("mid") + "\n");
 	            		Vertex v1 = m.findVertex(key1);
 	            		Vertex v2 = m.findVertex(key2);
-	            		System.out.println("YAY FOUND VERTEX" + v1 + v2);
 	            		m.edgeMap.put(key.toUpperCase(), new Edge(v1,v2,-Math.log(Double.valueOf((String) individualTicker.get("mid")))));
 	            		//creating new edges for reversing directions of edges with new weights, sources, and destinations
 	            		String newKey = key2+key1;
