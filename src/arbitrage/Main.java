@@ -26,12 +26,14 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	public ArrayList<Vertex> vertices;
 	public ArrayList<Edge> edges;
+	public HashSet<Edge> setOfEdges;
 	public static HashMap<String,Double> exchangeRates;
 	public static HashMap<String,Double> negExchangeRates;
 	public Map<String, Edge> edgeMap;
 	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	
 	private Main() {
+		setOfEdges = new HashSet<Edge>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
 		edgeMap = new HashMap<String, Edge>();
@@ -133,37 +135,20 @@ public class Main {
         m.vertices.add(m.XMR);
         m.vertices.add(m.AVT);
 
-        System.out.println("size of vertices " + m.vertices.size());
-        System.out.println("size of CryptoCurrency enum " + CryptoCurrency.values().length);
-        
-        Set<String> cryptocurrencies = new HashSet<>();
-        for(String pair : pairings) {
-        		String c = pair.substring(0,3);
-        		String c2 = pair.substring(3,6);
-        		String currency = c.toUpperCase();
-        		String currency2 = c2.toUpperCase();
-        		cryptocurrencies.add(currency);
-        		cryptocurrencies.add(currency2);
-        }
-        
-        System.out.println(cryptocurrencies);
         JSONParser parser = new JSONParser();
-        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/goodData36MB.json"));
+        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/goodData48MB.json"));
         JSONArray list = new JSONArray();
         list = (JSONArray) a.get("Tickers");
         int listSize = list.size();
-        System.out.println(listSize);
+        System.out.println("There are " + listSize + " JSON objects in the data file");
         for (int i = 0; i < listSize; i++){
-        		m.edges = new ArrayList<Edge>();
         		m.edgeMap = new HashMap<String,Edge>();
         		JSONObject tickersAtParticularTime = (JSONObject) list.get(i);
 //            String timestamp = tickersAtParticularTime.keySet().toString(); 
             Collection tickers = tickersAtParticularTime.values();
-            System.out.println(tickers);
             Object[] array = tickers.toArray();
             System.out.println("=============================");
             Collection vals = (Collection) array[0];
-            System.out.println(vals.getClass().getTypeName());
             for(int z = 0; z < vals.size(); z++){
             		Object ticker = ((ArrayList) vals).get(z);
             		String key = ((HashMap) ticker).keySet().toString();
@@ -171,12 +156,10 @@ public class Main {
             		key = key.replace("]", "");
             		String key1 = key.substring(0, 3).toUpperCase();
             		String key2 = key.substring(3, 6).toUpperCase();
-            		System.out.println(key1 + " " +key2);
             		Collection tickerVals = ((HashMap) ticker).values();
             		Iterator tickerValsIter = tickerVals.iterator();
             		while(tickerValsIter.hasNext()) {
 	            		JSONObject individualTicker = (JSONObject) parser.parse((String) tickerValsIter.next());
-	            		System.out.println(individualTicker.get("mid") + "\n");
 	            		Vertex v1 = m.findVertex(key1);
 	            		Vertex v2 = m.findVertex(key2);
 	            		m.edgeMap.put(key.toUpperCase(), new Edge(v1,v2,-Math.log(Double.valueOf((String) individualTicker.get("mid")))));
@@ -186,16 +169,10 @@ public class Main {
             		}
                 //adding to list of edges for our graph  
             		for(Edge e: m.edgeMap.values()) {
-                		m.edges.add(e);
+                		m.setOfEdges.add(e);
                 }
-                System.out.println(m.edgeMap.size());
-        		    System.out.println(m.edges.size());
+        		    m.edges = new ArrayList<Edge>(m.setOfEdges);
             }
-            Edge e = new Edge(m.findVertex("LTC"),m.findVertex("BTC"), 1.00);
-            System.out.println(e);
-            System.out.println(m.vertices.size());
-            System.out.println(m.edges.size());
-            m.edges.removeAll(Collections.singleton(null));
     	    		Graph g = new Graph(m.vertices, m.edges);
     	    		@SuppressWarnings("resource")
     	    		Scanner reader = new Scanner(System.in);  // Reading from System.in
@@ -203,6 +180,9 @@ public class Main {
     	    	    String input = reader.next();
     	    	    Vertex src = g.findSource(input);
     	        g.BellmanFord(g, src);
+    	        m.edges.clear();
+    	        m.setOfEdges.clear();
+    	        m.edgeMap.clear();
         }
     }
 }
