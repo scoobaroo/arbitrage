@@ -27,6 +27,7 @@ public class Main {
 	public static HashMap<String,Double> exchangeRates;
 	public static HashMap<String,Double> negExchangeRates;
 	public Map<String, Edge> edgeMap;
+	HashMap<String, Vertex> vertexMap;
 	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	org.json.JSONArray tickerArray;
 	
@@ -35,6 +36,7 @@ public class Main {
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
 		edgeMap = new HashMap<String, Edge>();
+		vertexMap = new HashMap<String, Vertex>();
 		tickerArray = new org.json.JSONArray();
 	}
 	
@@ -56,10 +58,7 @@ public class Main {
 		System.out.println(jsonResponse.getBody());
 		JsonNode body = jsonResponse.getBody();
 		tickerArray = body.getArray();
-		for(Object e  : tickerArray) {
-			System.out.println(e);
-		}
-		System.out.println(tickerArray);
+		populateVertices(tickerArray);
 	}
 	
 	public void getExchangeRates() throws UnirestException {
@@ -76,6 +75,37 @@ public class Main {
 			System.out.println(pair + ": " + rate);
 		}
 	}
+	
+	public void populateVertices(org.json.JSONArray array) {
+		Set<String> vertexSet = new LinkedHashSet<String>();
+		Map<String,Vertex> vertexMap = new HashMap<String,Vertex>();
+		for (Object pair : array) {
+			String p = (String) pair;
+			String symbol1 = p.substring(0,3);
+			String symbol2 = p.substring(3,6);
+			vertexSet.add(symbol1.toUpperCase());
+			vertexSet.add(symbol2.toUpperCase());
+		}
+		for(String symbol: vertexSet) {
+			System.out.print(symbol+ ",");
+		}
+		String[] oldVertices = { "BTC", "USD", "LTC", "EUR", "DSH", "ETH", "ETP", "SAN", "QTM", "EDO", "RRT", "XRP",
+				"BT1", "BT2", "BCC", "BCH", "QSH", "EOS", "OMG", "IOT", "BCH", "QSH", "EOS", "DAT", "YYW", "ZEC", "NEO",
+				"XMR", "AVT" };
+		for(String v : oldVertices) {
+			vertexSet.add(v);
+		}
+		System.out.println();
+		System.out.println("vertexSet size: " + vertexSet.size());
+		for(String v:vertexSet) {
+			vertexMap.put(v, new Vertex(CryptoCurrency.get(v),v));
+		}
+		System.out.println("vertexMap size: " + vertexMap.size());
+	}	
+	
+	public void populateEdges(HashMap<String,Double> rates) {
+		
+	}
 
     public Vertex findVertex(String name) {
 		for(Vertex v: vertices) {
@@ -90,7 +120,7 @@ public class Main {
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException{
 		Main m = new Main();
 		m.getSymbols();
-		m.getExchangeRates();
+//		m.getExchangeRates();
         //creating set of vertices with CryptoCurrencies as their value
         m.BTC = new Vertex(CryptoCurrency.BTC, "BTC");
         m.USD = new Vertex(CryptoCurrency.USD, "USD");
