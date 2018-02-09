@@ -12,13 +12,10 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
+
 import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
@@ -51,12 +48,14 @@ public class Main {
 	public static void getExchangeRates() throws UnirestException {
 		exchangeRates = new HashMap<String, Double>();
 		negExchangeRates = new HashMap<String, Double>();
+		double rate = 0.0;
 		for(String pair : pairings) {
-			//System.out.println("Current url:" + "https://btc-e.com/api/3/ticker/" + pair);
-//				HttpResponse<JsonNode> jsonResponse = Unirest.get("https://btc-e.com/api/3/ticker/" + pair).asJson();
-//				exchangeRates.put(pair, rate);
-//				negExchangeRates.put(pair, -Math.log(rate));
-			//System.out.println(pair + ":" + -Math.log(rate));
+			System.out.println("Current url:" + "https://api.bitfinex.com/v1/publicker/" + pair);
+				HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/publicker/" + pair).asJson();
+				System.out.println(jsonResponse);
+				exchangeRates.put(pair, rate);
+				negExchangeRates.put(pair, -Math.log(rate));
+			System.out.println(pair + ":" + -Math.log(rate));
 		}
 	}
 
