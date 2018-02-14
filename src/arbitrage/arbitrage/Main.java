@@ -28,10 +28,12 @@ public class Main {
 	public static HashMap<String,Double> negExchangeRates;
 	public Map<String, Edge> edgeMap;
 	HashMap<String, Vertex> vertexMap;
+	boolean firstTime;
 	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	org.json.JSONArray tickerArray;
 	
 	private Main() {
+		firstTime = true;
 		setOfEdges = new HashSet<Edge>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
@@ -58,7 +60,13 @@ public class Main {
 		System.out.println(jsonResponse.getBody());
 		JsonNode body = jsonResponse.getBody();
 		tickerArray = body.getArray();
-		populateVertices(tickerArray);
+		vertexMap = (HashMap<String, Vertex>) populateVertices(tickerArray);
+		Set<Vertex> setOfVertices = new HashSet<Vertex>();
+		for(Vertex v : vertexMap.values()) {
+			setOfVertices.add(v);
+		}
+		vertices = new ArrayList<Vertex>(setOfVertices);
+		firstTime = false;
 	}
 	
 	public void getExchangeRates() throws UnirestException {
@@ -76,7 +84,7 @@ public class Main {
 		}
 	}
 	
-	public void populateVertices(org.json.JSONArray array) {
+	public Map<String,Vertex> populateVertices(org.json.JSONArray array) {
 		Set<String> vertexSet = new LinkedHashSet<String>();
 		Map<String,Vertex> vertexMap = new HashMap<String,Vertex>();
 		for (Object pair : array) {
@@ -86,9 +94,7 @@ public class Main {
 			vertexSet.add(symbol1.toUpperCase());
 			vertexSet.add(symbol2.toUpperCase());
 		}
-		for(String symbol: vertexSet) {
-			System.out.print(symbol+ ",");
-		}
+		// vertices before bitfinex changed symbols available
 		String[] oldVertices = { "BTC", "USD", "LTC", "EUR", "DSH", "ETH", "ETP", "SAN", "QTM", "EDO", "RRT", "XRP",
 				"BT1", "BT2", "BCC", "BCH", "QSH", "EOS", "OMG", "IOT", "BCH", "QSH", "EOS", "DAT", "YYW", "ZEC", "NEO",
 				"XMR", "AVT" };
@@ -97,13 +103,16 @@ public class Main {
 		}
 		System.out.println();
 		System.out.println("vertexSet size: " + vertexSet.size());
+		// Creating unique set of vertices
 		for(String v:vertexSet) {
 			vertexMap.put(v, new Vertex(CryptoCurrency.get(v),v));
 		}
 		System.out.println("vertexMap size: " + vertexMap.size());
+		return vertexMap;
 	}	
 	
 	public void populateEdges(HashMap<String,Double> rates) {
+		
 		
 	}
 
@@ -117,71 +126,73 @@ public class Main {
     }
     
 	@SuppressWarnings("rawtypes")
-	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException{
+	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
 		Main m = new Main();
-		m.getSymbols();
+		if(m.firstTime) m.getSymbols();
+		Thread.sleep(1000);
 //		m.getExchangeRates();
+		// don't need below code because we are populating vertices in getSymbols
         //creating set of vertices with CryptoCurrencies as their value
-        m.BTC = new Vertex(CryptoCurrency.BTC, "BTC");
-        m.USD = new Vertex(CryptoCurrency.USD, "USD");
-        m.LTC = new Vertex(CryptoCurrency.LTC, "LTC");
-        m.EUR = new Vertex(CryptoCurrency.EUR, "EUR");
-        m.DSH = new Vertex(CryptoCurrency.DSH, "DSH");
-        m.ETH = new Vertex(CryptoCurrency.ETH, "ETH");
-        m.ETP = new Vertex(CryptoCurrency.ETP, "ETP");
-        m.SAN = new Vertex(CryptoCurrency.SAN, "SAN");
-        m.QTM = new Vertex(CryptoCurrency.QTM, "QTM");
-        m.EDO = new Vertex(CryptoCurrency.EDO, "EDO");
-        m.RRT = new Vertex(CryptoCurrency.RRT, "RRT");
-        m.XRP = new Vertex(CryptoCurrency.XRP, "XRP");
-        m.BT1 = new Vertex(CryptoCurrency.BT1, "BT1");
-        m.BT2 = new Vertex(CryptoCurrency.BT2, "BT2");
-        m.BCC = new Vertex(CryptoCurrency.EDO, "BCC");
-        m.BCH = new Vertex(CryptoCurrency.BCH, "BCH");
-        m.QSH = new Vertex(CryptoCurrency.QSH, "QSH");
-        m.EOS = new Vertex(CryptoCurrency.EOS, "EOS");
-        m.OMG = new Vertex(CryptoCurrency.OMG, "OMG");
-        m.IOT = new Vertex(CryptoCurrency.IOT, "IOT");
-        m.BTG = new Vertex(CryptoCurrency.BTG, "BCH");
-        m.ETC = new Vertex(CryptoCurrency.ETC, "QSH");
-        m.BCU = new Vertex(CryptoCurrency.BCU, "EOS");
-        m.DAT = new Vertex(CryptoCurrency.DAT, "DAT");
-        m.YYW = new Vertex(CryptoCurrency.YYW, "YYW");   
-        m.ZEC = new Vertex(CryptoCurrency.ZEC, "ZEC");
-        m.NEO = new Vertex(CryptoCurrency.NEO, "NEO");
-        m.XMR = new Vertex(CryptoCurrency.XMR, "XMR");
-        m.AVT = new Vertex(CryptoCurrency.AVT, "AVT");
-     
-        //adding vertices to ArrayList of vertices to use in bellman ford
-        m.vertices.add(m.BTC);
-        m.vertices.add(m.USD);
-        m.vertices.add(m.LTC); 
-        m.vertices.add(m.EUR);
-        m.vertices.add(m.DSH);
-        m.vertices.add(m.ETH);
-        m.vertices.add(m.ETP);
-        m.vertices.add(m.SAN);
-        m.vertices.add(m.QTM);
-        m.vertices.add(m.EDO);
-        m.vertices.add(m.RRT);
-        m.vertices.add(m.XRP);
-        m.vertices.add(m.BT1);
-        m.vertices.add(m.BT2);
-        m.vertices.add(m.BCC);
-        m.vertices.add(m.BCH);
-        m.vertices.add(m.QSH);
-        m.vertices.add(m.EOS);
-        m.vertices.add(m.OMG);
-        m.vertices.add(m.IOT);
-        m.vertices.add(m.BTG);
-        m.vertices.add(m.ETC);
-        m.vertices.add(m.BCU);
-        m.vertices.add(m.DAT);
-        m.vertices.add(m.YYW);
-        m.vertices.add(m.ZEC);
-        m.vertices.add(m.NEO);
-        m.vertices.add(m.XMR);
-        m.vertices.add(m.AVT);
+//        m.BTC = new Vertex(CryptoCurrency.BTC, "BTC");
+//        m.USD = new Vertex(CryptoCurrency.USD, "USD");
+//        m.LTC = new Vertex(CryptoCurrency.LTC, "LTC");
+//        m.EUR = new Vertex(CryptoCurrency.EUR, "EUR");
+//        m.DSH = new Vertex(CryptoCurrency.DSH, "DSH");
+//        m.ETH = new Vertex(CryptoCurrency.ETH, "ETH");
+//        m.ETP = new Vertex(CryptoCurrency.ETP, "ETP");
+//        m.SAN = new Vertex(CryptoCurrency.SAN, "SAN");
+//        m.QTM = new Vertex(CryptoCurrency.QTM, "QTM");
+//        m.EDO = new Vertex(CryptoCurrency.EDO, "EDO");
+//        m.RRT = new Vertex(CryptoCurrency.RRT, "RRT");
+//        m.XRP = new Vertex(CryptoCurrency.XRP, "XRP");
+//        m.BT1 = new Vertex(CryptoCurrency.BT1, "BT1");
+//        m.BT2 = new Vertex(CryptoCurrency.BT2, "BT2");
+//        m.BCC = new Vertex(CryptoCurrency.EDO, "BCC");
+//        m.BCH = new Vertex(CryptoCurrency.BCH, "BCH");
+//        m.QSH = new Vertex(CryptoCurrency.QSH, "QSH");
+//        m.EOS = new Vertex(CryptoCurrency.EOS, "EOS");
+//        m.OMG = new Vertex(CryptoCurrency.OMG, "OMG");
+//        m.IOT = new Vertex(CryptoCurrency.IOT, "IOT");
+//        m.BTG = new Vertex(CryptoCurrency.BTG, "BCH");
+//        m.ETC = new Vertex(CryptoCurrency.ETC, "QSH");
+//        m.BCU = new Vertex(CryptoCurrency.BCU, "EOS");
+//        m.DAT = new Vertex(CryptoCurrency.DAT, "DAT");
+//        m.YYW = new Vertex(CryptoCurrency.YYW, "YYW");   
+//        m.ZEC = new Vertex(CryptoCurrency.ZEC, "ZEC");
+//        m.NEO = new Vertex(CryptoCurrency.NEO, "NEO");
+//        m.XMR = new Vertex(CryptoCurrency.XMR, "XMR");
+//        m.AVT = new Vertex(CryptoCurrency.AVT, "AVT");
+//     
+//        // don't need this code because we are populating vertices from getSymbols
+//        m.vertices.add(m.BTC);
+//        m.vertices.add(m.USD);
+//        m.vertices.add(m.LTC); 
+//        m.vertices.add(m.EUR);
+//        m.vertices.add(m.DSH);
+//        m.vertices.add(m.ETH);
+//        m.vertices.add(m.ETP);
+//        m.vertices.add(m.SAN);
+//        m.vertices.add(m.QTM);
+//        m.vertices.add(m.EDO);
+//        m.vertices.add(m.RRT);
+//        m.vertices.add(m.XRP);
+//        m.vertices.add(m.BT1);
+//        m.vertices.add(m.BT2);
+//        m.vertices.add(m.BCC);
+//        m.vertices.add(m.BCH);
+//        m.vertices.add(m.QSH);
+//        m.vertices.add(m.EOS);
+//        m.vertices.add(m.OMG);
+//        m.vertices.add(m.IOT);
+//        m.vertices.add(m.BTG);
+//        m.vertices.add(m.ETC);
+//        m.vertices.add(m.BCU);
+//        m.vertices.add(m.DAT);
+//        m.vertices.add(m.YYW);
+//        m.vertices.add(m.ZEC);
+//        m.vertices.add(m.NEO);
+//        m.vertices.add(m.XMR);
+//        m.vertices.add(m.AVT);
 
 //        JSONParser parser = new JSONParser();
 //        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/goodData48MB.json"));
@@ -222,10 +233,11 @@ public class Main {
 //        		    m.edges = new ArrayList<Edge>(m.setOfEdges);
 //            }
     	    		Graph g = new Graph(m.vertices, m.edges);
-//    	    		@SuppressWarnings("resource")
-//    	    		Scanner reader = new Scanner(System.in);  // Reading from System.in
 //    	    	    System.out.println("Enter starting vertex: ");
-//    	    	    String input = reader.next();
+    	    		// the 3 lines below are so that we don't have to use while(true)
+    	    		@SuppressWarnings("resource")
+    	    		Scanner reader = new Scanner(System.in);  // Reading from System.in
+    	    	    String input = reader.next();
 //    	    	    Vertex src = g.findSource(input);
     	    		Vertex src = m.BTC;
     	        g.BellmanFord(g, src);
