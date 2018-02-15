@@ -1,12 +1,15 @@
 package arbitrage;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 
 public class Graph {
     public ArrayList<Vertex> vertices;
     public ArrayList<Edge> edges;
+    public ArrayList<Double> cycleWeightList;
+    public ArrayList<Vertex> bestCycle;
     double inf = Double.POSITIVE_INFINITY;
     
     public Graph(ArrayList<Vertex> vertices, ArrayList<Edge> edges) {
@@ -14,8 +17,10 @@ public class Graph {
         this.vertices = vertices;
         this.edges = edges;
         System.out.println("Graph vertices");
+        System.out.println("Vertices size: " + vertices.size());
         System.out.println(vertices);
         System.out.println("Graph edges");
+        System.out.println("Edges size: " + edges.size());
         System.out.println(edges);
     }
 
@@ -28,7 +33,8 @@ public class Graph {
         int i,j;
         vertices = graph.vertices;
         edges = graph.edges;
- 
+        cycleWeightList = new ArrayList<Double>();
+        bestCycle = new ArrayList<Vertex>();
         HashMap<Vertex, Double> dist = new HashMap<Vertex, Double>(vertices.size());
         // Step 1: Initialize distances from src to all other
         // vertices as INFINITE
@@ -74,11 +80,15 @@ public class Graph {
 	              while(cycle.add(v)){
 	                  v=v.predecessor;
 	              }
-	              printCycle(cycle);
 	            }
             }
         }
         System.out.println("\nThe number of negative cycles, or arbitrage opportunities detected were :"+totalCycles);
+        Double maxRatio = Collections.max(cycleWeightList);
+        System.out.println("Maximum Profit Ratio found: "+ maxRatio);
+        int cycleSize = bestCycle.size() + 1;
+        System.out.println("Number of trades needed to execute:" + cycleSize);
+        System.out.println(bestCycle);
         printDistanceHashMap(dist, vertices);
     }
 
@@ -103,31 +113,37 @@ public class Graph {
                 begin *= Math.exp(edge.weight);
             }
         }
+        System.out.println(cycleArrayList.get(0).name);
+        System.out.println(cycleArrayList);
         Edge lastEdge = findEdge(cycleArrayList.get(cycleArrayList.size()-1),cycleArrayList.get(0));
         if(lastEdge!=null){
             cycleWeight += lastEdge.weight;
             if(cycleWeight> maxWeight){
-            	maxWeight = cycleWeight;
+            		maxWeight = cycleWeight;
             }
             maxWeight = cycleWeight;
             begin *= Math.exp(lastEdge.weight);
-            System.out.println(Math.exp(cycleWeight));
+            System.out.println();
+            System.out.println("Math.exp(cycleWeight): " + Math.exp(cycleWeight));
             System.out.println("Starting with 1 " +v.name+ " we can end up with " + begin +" "+v.name +" by utilizing the negative cycle");
-    
+            cycleWeightList.add(begin);
+            Double maxRatio = Collections.max(cycleWeightList);
+            if(begin>maxRatio) {
+            		maxRatio = begin;
+            		bestCycle = cycleArrayList;
+            }
         } else {
             System.out.println("\nCouldn't find final edge");
         }
         System.out.println("Maximum negative weight cycle is:" + Math.exp(maxWeight));
     }
-
-    void printCycle(LinkedHashSet<Vertex> c){
+    
+    void printCycle(LinkedHashSet<Vertex> set){
         System.out.println("we are printing the contents of the LinkedHashSet<Vertex> cycle");
-
         // switch to for loop for readability.
-        for(Vertex v : c) {
-        	System.out.print(v.name + "--->");
+        for(Vertex v : set) {
+        		System.out.print(v.name + "--->");
         }
-
     }
 
     Edge findEdge(Vertex src, Vertex dest){
@@ -139,14 +155,14 @@ public class Graph {
         }
         return null;
     }
-
-    Vertex findSource(String name){
-        for( int i = 0; i<vertices.size();i++){
-            Vertex v= vertices.get(i);
-            if (v.name.equalsIgnoreCase(name))
-                return v;
-        }
-        return null;
+    
+    public Vertex findVertex(String name) {
+		for(Vertex v: vertices) {
+			if(v.name.equalsIgnoreCase(name)) {
+				return v;
+			}
+		}
+		return null; 
     }
 
     // A utility function used to print the solution

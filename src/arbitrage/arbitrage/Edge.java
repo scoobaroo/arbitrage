@@ -9,9 +9,9 @@ public class Edge {
         this.dest = dest;
         this.weight = weight;
     }
-//    @Override
-//    public String toString() {
-//    		String s = "Edge " + this.src.toString() + this.dest.toString() + " with weight " + this.weight;
-//    		return s;
-//    }
+    @Override
+    public String toString() {
+    		String s = "Edge " + this.src + this.dest + " with weight " + this.weight;
+    		return s;
+    }
 }

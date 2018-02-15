@@ -33,10 +33,10 @@ public class Main {
 	org.json.JSONArray tickerArray;
 	
 	private Main() {
-		firstTime = true;
-		setOfEdges = new HashSet<Edge>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
+		firstTime = true;
+		setOfEdges = new HashSet<Edge>();
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
 		tickerArray = new org.json.JSONArray();
@@ -54,40 +54,17 @@ public class Main {
 			"rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth","sngusd",
 			"sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
 
+	@SuppressWarnings("rawtypes")
 	public void getSymbols() throws UnirestException {
-		System.out.println("Current url: " + "https://api.bitfinex.com/v1/symbols");
+		System.out.println("URL: " + "https://api.bitfinex.com/v1/symbols");
 		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/symbols").asJson();
 		System.out.println(jsonResponse.getBody());
 		JsonNode body = jsonResponse.getBody();
 		tickerArray = body.getArray();
-		vertexMap = (HashMap<String, Vertex>) populateVertices(tickerArray);
-		Set<Vertex> setOfVertices = new HashSet<Vertex>();
-		for(Vertex v : vertexMap.values()) {
-			setOfVertices.add(v);
-		}
-		vertices = new ArrayList<Vertex>(setOfVertices);
-		firstTime = false;
-	}
-	
-	public void getExchangeRates() throws UnirestException {
-		exchangeRates = new HashMap<String, Double>();
-		negExchangeRates = new HashMap<String, Double>();
-		double rate = 0.0;
-		for(Object pair : tickerArray) {
-			System.out.println("Current url:" + "https://api.bitfinex.com/v1/pubticker/" + pair);
-			HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/pubticker/" + pair).asJson();
-			System.out.println(jsonResponse.getBody().getObject());
-			org.json.JSONObject obj = jsonResponse.getBody().getObject();
-			rate = Double.valueOf((String) obj.get("mid"));
-			exchangeRates.put((String) pair, rate);
-			System.out.println(pair + ": " + rate);
-		}
-	}
-	
-	public Map<String,Vertex> populateVertices(org.json.JSONArray array) {
+		System.out.println("Number of tickers received: " + tickerArray.length());
 		Set<String> vertexSet = new LinkedHashSet<String>();
 		Map<String,Vertex> vertexMap = new HashMap<String,Vertex>();
-		for (Object pair : array) {
+		for (Object pair : tickerArray) {
 			String p = (String) pair;
 			String symbol1 = p.substring(0,3);
 			String symbol2 = p.substring(3,6);
@@ -108,14 +85,50 @@ public class Main {
 			vertexMap.put(v, new Vertex(CryptoCurrency.get(v),v));
 		}
 		System.out.println("vertexMap size: " + vertexMap.size());
-		return vertexMap;
-	}	
-	
-	public void populateEdges(HashMap<String,Double> rates) {
-		
-		
+		Set<Vertex> setOfVertices = new HashSet<Vertex>();
+		for(Vertex v : vertexMap.values()) {
+			setOfVertices.add(v);
+		}
+		vertices = new ArrayList<Vertex>(setOfVertices);
+		firstTime = false;
 	}
-
+	
+	public void getExchangeRates() throws UnirestException {
+		double rate = 0.0;
+		//don't need below code since we are exiting when the error rate_limit is gotten in a response
+//		for ( int i = 1; i <= 30; i++) {
+//			System.out.println(tickerArray.length());
+//			tickerArray.remove(tickerArray.length()-i);
+//		}	
+		for(Object pair : tickerArray) {
+			System.out.println("Current url:" + "https://api.bitfinex.com/v1/pubticker/" + pair);
+			HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/pubticker/" + pair).asJson();
+			System.out.println(jsonResponse.getBody().getObject());
+			if (jsonResponse.getBody().getObject().has("error") == true) {
+				for(Edge e: edgeMap.values()) {
+		    			setOfEdges.add(e);
+				}
+				edges = new ArrayList<Edge>(setOfEdges);
+				return;
+			} else {
+				org.json.JSONObject obj = jsonResponse.getBody().getObject();
+				rate = Double.valueOf((String) obj.get("mid"));
+				System.out.println(pair + ": " + rate);
+				String symbol1 = ((String) pair).substring(0,3);
+				String symbol2 = ((String) pair).substring(3,6);
+				Vertex v1 = findVertex(symbol1);
+				Vertex v2 = findVertex(symbol2);
+				String pairReversed = symbol2 + symbol1;
+				edgeMap.put((String) pair, new Edge(v1,v2,-Math.log(rate)));
+				edgeMap.put((String) pairReversed, new Edge(v2,v1, Math.log(rate)));
+			}
+		}
+		for(Edge e: edgeMap.values()) {
+	    		setOfEdges.add(e);
+		}
+		edges = new ArrayList<Edge>(setOfEdges);
+	}
+	
     public Vertex findVertex(String name) {
 		for(Vertex v: vertices) {
 			if(v.name.equalsIgnoreCase(name)) {
@@ -129,121 +142,122 @@ public class Main {
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
 		Main m = new Main();
 		if(m.firstTime) m.getSymbols();
-		Thread.sleep(1000);
-//		m.getExchangeRates();
-		// don't need below code because we are populating vertices in getSymbols
-        //creating set of vertices with CryptoCurrencies as their value
-//        m.BTC = new Vertex(CryptoCurrency.BTC, "BTC");
-//        m.USD = new Vertex(CryptoCurrency.USD, "USD");
-//        m.LTC = new Vertex(CryptoCurrency.LTC, "LTC");
-//        m.EUR = new Vertex(CryptoCurrency.EUR, "EUR");
-//        m.DSH = new Vertex(CryptoCurrency.DSH, "DSH");
-//        m.ETH = new Vertex(CryptoCurrency.ETH, "ETH");
-//        m.ETP = new Vertex(CryptoCurrency.ETP, "ETP");
-//        m.SAN = new Vertex(CryptoCurrency.SAN, "SAN");
-//        m.QTM = new Vertex(CryptoCurrency.QTM, "QTM");
-//        m.EDO = new Vertex(CryptoCurrency.EDO, "EDO");
-//        m.RRT = new Vertex(CryptoCurrency.RRT, "RRT");
-//        m.XRP = new Vertex(CryptoCurrency.XRP, "XRP");
-//        m.BT1 = new Vertex(CryptoCurrency.BT1, "BT1");
-//        m.BT2 = new Vertex(CryptoCurrency.BT2, "BT2");
-//        m.BCC = new Vertex(CryptoCurrency.EDO, "BCC");
-//        m.BCH = new Vertex(CryptoCurrency.BCH, "BCH");
-//        m.QSH = new Vertex(CryptoCurrency.QSH, "QSH");
-//        m.EOS = new Vertex(CryptoCurrency.EOS, "EOS");
-//        m.OMG = new Vertex(CryptoCurrency.OMG, "OMG");
-//        m.IOT = new Vertex(CryptoCurrency.IOT, "IOT");
-//        m.BTG = new Vertex(CryptoCurrency.BTG, "BCH");
-//        m.ETC = new Vertex(CryptoCurrency.ETC, "QSH");
-//        m.BCU = new Vertex(CryptoCurrency.BCU, "EOS");
-//        m.DAT = new Vertex(CryptoCurrency.DAT, "DAT");
-//        m.YYW = new Vertex(CryptoCurrency.YYW, "YYW");   
-//        m.ZEC = new Vertex(CryptoCurrency.ZEC, "ZEC");
-//        m.NEO = new Vertex(CryptoCurrency.NEO, "NEO");
-//        m.XMR = new Vertex(CryptoCurrency.XMR, "XMR");
-//        m.AVT = new Vertex(CryptoCurrency.AVT, "AVT");
-//     
-//        // don't need this code because we are populating vertices from getSymbols
-//        m.vertices.add(m.BTC);
-//        m.vertices.add(m.USD);
-//        m.vertices.add(m.LTC); 
-//        m.vertices.add(m.EUR);
-//        m.vertices.add(m.DSH);
-//        m.vertices.add(m.ETH);
-//        m.vertices.add(m.ETP);
-//        m.vertices.add(m.SAN);
-//        m.vertices.add(m.QTM);
-//        m.vertices.add(m.EDO);
-//        m.vertices.add(m.RRT);
-//        m.vertices.add(m.XRP);
-//        m.vertices.add(m.BT1);
-//        m.vertices.add(m.BT2);
-//        m.vertices.add(m.BCC);
-//        m.vertices.add(m.BCH);
-//        m.vertices.add(m.QSH);
-//        m.vertices.add(m.EOS);
-//        m.vertices.add(m.OMG);
-//        m.vertices.add(m.IOT);
-//        m.vertices.add(m.BTG);
-//        m.vertices.add(m.ETC);
-//        m.vertices.add(m.BCU);
-//        m.vertices.add(m.DAT);
-//        m.vertices.add(m.YYW);
-//        m.vertices.add(m.ZEC);
-//        m.vertices.add(m.NEO);
-//        m.vertices.add(m.XMR);
-//        m.vertices.add(m.AVT);
-
-//        JSONParser parser = new JSONParser();
-//        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/goodData48MB.json"));
-//        JSONArray list = new JSONArray();
-//        list = (JSONArray) a.get("Tickers");
-//        int listSize = list.size();
-//        System.out.println("There are " + listSize + " JSON objects in the data file");
-//        for (int i = 0; i < listSize; i++){
-//        		m.edgeMap = new HashMap<String,Edge>();
-//        		JSONObject tickersAtParticularTime = (JSONObject) list.get(i);
-////            String timestamp = tickersAtParticularTime.keySet().toString(); 
-//            Collection tickers = tickersAtParticularTime.values();
-//            Object[] array = tickers.toArray();
-//            System.out.println("=============================");
-//            Collection vals = (Collection) array[0];
-//            for(int z = 0; z < vals.size(); z++){
-//            		Object ticker = ((ArrayList) vals).get(z);
-//            		String key = ((HashMap) ticker).keySet().toString();
-//            		key = key.replace("[", "");
-//            		key = key.replace("]", "");
-//            		String key1 = key.substring(0, 3).toUpperCase();
-//            		String key2 = key.substring(3, 6).toUpperCase();
-//            		Collection tickerVals = ((HashMap) ticker).values();
-//            		Iterator tickerValsIter = tickerVals.iterator();
-//            		while(tickerValsIter.hasNext()) {
-//	            		JSONObject individualTicker = (JSONObject) parser.parse((String) tickerValsIter.next());
-//	            		Vertex v1 = m.findVertex(key1);
-//	            		Vertex v2 = m.findVertex(key2);
-//	            		m.edgeMap.put(key.toUpperCase(), new Edge(v1,v2,-Math.log(Double.valueOf((String) individualTicker.get("mid")))));
-//	            		//creating new edges for reversing directions of edges with new weights, sources, and destinations
-//	            		String newKey = key2+key1;
-//	            		m.edgeMap.put(newKey, new Edge(v2,v1, Math.log(Double.valueOf((String) individualTicker.get("mid")))));
-//            		}
-//                //adding to list of edges for our graph  
-//            		for(Edge e: m.edgeMap.values()) {
-//                		m.setOfEdges.add(e);
-//                }
-//        		    m.edges = new ArrayList<Edge>(m.setOfEdges);
-//            }
-    	    		Graph g = new Graph(m.vertices, m.edges);
-//    	    	    System.out.println("Enter starting vertex: ");
-    	    		// the 3 lines below are so that we don't have to use while(true)
-    	    		@SuppressWarnings("resource")
-    	    		Scanner reader = new Scanner(System.in);  // Reading from System.in
-    	    	    String input = reader.next();
-//    	    	    Vertex src = g.findSource(input);
-    	    		Vertex src = m.BTC;
-    	        g.BellmanFord(g, src);
-    	        m.edges.clear();
-    	        m.setOfEdges.clear();
-    	        m.edgeMap.clear();
-//        }
-    }
+		while(true) {
+			m.getExchangeRates();
+			Graph g = new Graph(m.vertices, m.edges);
+	//	    System.out.println("Enter starting vertex: ");
+	//		// the 3 lines below are so that we don't have to use while(true)
+	//		@SuppressWarnings("resource")
+	//		Scanner reader = new Scanner(System.in);  // Reading from System.in
+	//	    String input = reader.next();
+			Vertex src = g.findVertex("BTC");
+		    g.BellmanFord(g, src);
+		    m.edges.clear();
+		    m.setOfEdges.clear();
+		    m.edgeMap.clear();
+			Thread.sleep(60000);
+		}
+	}
 }
+			// don't need below code because we are populating vertices in getSymbols
+	        //creating set of vertices with CryptoCurrencies as their value
+	//        m.BTC = new Vertex(CryptoCurrency.BTC, "BTC");
+	//        m.USD = new Vertex(CryptoCurrency.USD, "USD");
+	//        m.LTC = new Vertex(CryptoCurrency.LTC, "LTC");
+	//        m.EUR = new Vertex(CryptoCurrency.EUR, "EUR");
+	//        m.DSH = new Vertex(CryptoCurrency.DSH, "DSH");
+	//        m.ETH = new Vertex(CryptoCurrency.ETH, "ETH");
+	//        m.ETP = new Vertex(CryptoCurrency.ETP, "ETP");
+	//        m.SAN = new Vertex(CryptoCurrency.SAN, "SAN");
+	//        m.QTM = new Vertex(CryptoCurrency.QTM, "QTM");
+	//        m.EDO = new Vertex(CryptoCurrency.EDO, "EDO");
+	//        m.RRT = new Vertex(CryptoCurrency.RRT, "RRT");
+	//        m.XRP = new Vertex(CryptoCurrency.XRP, "XRP");
+	//        m.BT1 = new Vertex(CryptoCurrency.BT1, "BT1");
+	//        m.BT2 = new Vertex(CryptoCurrency.BT2, "BT2");
+	//        m.BCC = new Vertex(CryptoCurrency.EDO, "BCC");
+	//        m.BCH = new Vertex(CryptoCurrency.BCH, "BCH");
+	//        m.QSH = new Vertex(CryptoCurrency.QSH, "QSH");
+	//        m.EOS = new Vertex(CryptoCurrency.EOS, "EOS");
+	//        m.OMG = new Vertex(CryptoCurrency.OMG, "OMG");
+	//        m.IOT = new Vertex(CryptoCurrency.IOT, "IOT");
+	//        m.BTG = new Vertex(CryptoCurrency.BTG, "BCH");
+	//        m.ETC = new Vertex(CryptoCurrency.ETC, "QSH");
+	//        m.BCU = new Vertex(CryptoCurrency.BCU, "EOS");
+	//        m.DAT = new Vertex(CryptoCurrency.DAT, "DAT");
+	//        m.YYW = new Vertex(CryptoCurrency.YYW, "YYW");   
+	//        m.ZEC = new Vertex(CryptoCurrency.ZEC, "ZEC");
+	//        m.NEO = new Vertex(CryptoCurrency.NEO, "NEO");
+	//        m.XMR = new Vertex(CryptoCurrency.XMR, "XMR");
+	//        m.AVT = new Vertex(CryptoCurrency.AVT, "AVT");
+	//     
+	//        // don't need this code because we are populating vertices from getSymbols
+	//        m.vertices.add(m.BTC);
+	//        m.vertices.add(m.USD);
+	//        m.vertices.add(m.LTC); 
+	//        m.vertices.add(m.EUR);
+	//        m.vertices.add(m.DSH);
+	//        m.vertices.add(m.ETH);
+	//        m.vertices.add(m.ETP);
+	//        m.vertices.add(m.SAN);
+	//        m.vertices.add(m.QTM);
+	//        m.vertices.add(m.EDO);
+	//        m.vertices.add(m.RRT);
+	//        m.vertices.add(m.XRP);
+	//        m.vertices.add(m.BT1);
+	//        m.vertices.add(m.BT2);
+	//        m.vertices.add(m.BCC);
+	//        m.vertices.add(m.BCH);
+	//        m.vertices.add(m.QSH);
+	//        m.vertices.add(m.EOS);
+	//        m.vertices.add(m.OMG);
+	//        m.vertices.add(m.IOT);
+	//        m.vertices.add(m.BTG);
+	//        m.vertices.add(m.ETC);
+	//        m.vertices.add(m.BCU);
+	//        m.vertices.add(m.DAT);
+	//        m.vertices.add(m.YYW);
+	//        m.vertices.add(m.ZEC);
+	//        m.vertices.add(m.NEO);
+	//        m.vertices.add(m.XMR);
+	//        m.vertices.add(m.AVT);
+	
+	//        JSONParser parser = new JSONParser();
+	//        JSONObject a = (JSONObject) parser.parse(new FileReader("/Users/erichan/desktop/cs297/goodData48MB.json"));
+	//        JSONArray list = new JSONArray();
+	//        list = (JSONArray) a.get("Tickers");
+	//        int listSize = list.size();
+	//        System.out.println("There are " + listSize + " JSON objects in the data file");
+	//        for (int i = 0; i < listSize; i++){
+	//        		m.edgeMap = new HashMap<String,Edge>();
+	//        		JSONObject tickersAtParticularTime = (JSONObject) list.get(i);
+	////            String timestamp = tickersAtParticularTime.keySet().toString(); 
+	//            Collection tickers = tickersAtParticularTime.values();
+	//            Object[] array = tickers.toArray();
+	//            System.out.println("=============================");
+	//            Collection vals = (Collection) array[0];
+	//            for(int z = 0; z < vals.size(); z++){
+	//            		Object ticker = ((ArrayList) vals).get(z);
+	//            		String key = ((HashMap) ticker).keySet().toString();
+	//            		key = key.replace("[", "");
+	//            		key = key.replace("]", "");
+	//            		String key1 = key.substring(0, 3).toUpperCase();
+	//            		String key2 = key.substring(3, 6).toUpperCase();
+	//            		Collection tickerVals = ((HashMap) ticker).values();
+	//            		Iterator tickerValsIter = tickerVals.iterator();
+	//            		while(tickerValsIter.hasNext()) {
+	//	            		JSONObject individualTicker = (JSONObject) parser.parse((String) tickerValsIter.next());
+	//	            		Vertex v1 = m.findVertex(key1);
+	//	            		Vertex v2 = m.findVertex(key2);
+	//	            		m.edgeMap.put(key.toUpperCase(), new Edge(v1,v2,-Math.log(Double.valueOf((String) individualTicker.get("mid")))));
+	//	            		//creating new edges for reversing directions of edges with new weights, sources, and destinations
+	//	            		String newKey = key2+key1;
+	//	            		m.edgeMap.put(newKey, new Edge(v2,v1, Math.log(Double.valueOf((String) individualTicker.get("mid")))));
+	//            		}
+	//                //adding to list of edges for our graph  
+	//            		for(Edge e: m.edgeMap.values()) {
+	//                		m.setOfEdges.add(e);
+	//                }
+	//        		    m.edges = new ArrayList<Edge>(m.setOfEdges);
+	//            }
+	//        }
