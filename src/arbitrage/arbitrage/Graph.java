@@ -10,12 +10,16 @@ public class Graph {
     public ArrayList<Edge> edges;
     public ArrayList<Double> cycleWeightList;
     public ArrayList<Vertex> bestCycle;
+    HashMap<Vertex, Double> dist;
     double inf = Double.POSITIVE_INFINITY;
     
     public Graph(ArrayList<Vertex> vertices, ArrayList<Edge> edges) {
         super();
         this.vertices = vertices;
         this.edges = edges;
+        cycleWeightList = new ArrayList<Double>();
+        bestCycle = new ArrayList<Vertex>();
+        dist = new HashMap<Vertex, Double>(vertices.size());
         System.out.println("Graph vertices");
         System.out.println("Vertices size: " + vertices.size());
         System.out.println(vertices);
@@ -33,9 +37,6 @@ public class Graph {
         int i,j;
         vertices = graph.vertices;
         edges = graph.edges;
-        cycleWeightList = new ArrayList<Double>();
-        bestCycle = new ArrayList<Vertex>();
-        HashMap<Vertex, Double> dist = new HashMap<Vertex, Double>(vertices.size());
         // Step 1: Initialize distances from src to all other
         // vertices as INFINITE
         for(i=0;i<vertices.size();i++){
@@ -83,11 +84,13 @@ public class Graph {
 	            }
             }
         }
+        System.out.println("\n==============================BELLMAN FORD ENDED=================================");
+        System.out.println("\n=================================================================================");
         System.out.println("\nThe number of negative cycles, or arbitrage opportunities detected were :"+totalCycles);
         Double maxRatio = Collections.max(cycleWeightList);
         System.out.println("Maximum Profit Ratio found: "+ maxRatio);
         int cycleSize = bestCycle.size() + 1;
-        System.out.println("Number of trades needed to execute:" + cycleSize);
+        System.out.println("Number of trades in sequence to execute:" + cycleSize);
         System.out.println(bestCycle);
         printDistanceHashMap(dist, vertices);
     }
@@ -128,9 +131,9 @@ public class Graph {
             System.out.println("Starting with 1 " +v.name+ " we can end up with " + begin +" "+v.name +" by utilizing the negative cycle");
             cycleWeightList.add(begin);
             Double maxRatio = Collections.max(cycleWeightList);
-            if(begin>maxRatio) {
-            		maxRatio = begin;
+            if(begin > maxRatio) {
             		bestCycle = cycleArrayList;
+            		maxRatio = begin;
             }
         } else {
             System.out.println("\nCouldn't find final edge");
@@ -167,7 +170,9 @@ public class Graph {
 
     // A utility function used to print the solution
     void printDistanceHashMap(HashMap<Vertex, Double> distance, ArrayList<Vertex> V)
-    {   System.out.println("\n****************************");
+    {   
+    		System.out.println("\n**********************************************************************");
+    		System.out.println("\n**********************************************************************");
         System.out.println("Vertex Distance from Source");
         for (int i=0; i<V.size(); ++i)
             System.out.println(V.get(i).name+"\t\t"+distance.get(V.get(i)));

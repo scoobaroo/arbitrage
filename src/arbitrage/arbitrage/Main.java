@@ -42,17 +42,16 @@ public class Main {
 		tickerArray = new org.json.JSONArray();
 	}
 	
-	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd",
-			"rrtusd","rrtbtc","zecusd","zecbtc","xmrusd","xmrbtc","dshusd","dshbtc","btceur","xrpusd",
-			"xrpbtc","iotusd","iotbtc","ioteth","eosusd","eosbtc","eoseth","sanusd","sanbtc","saneth",
-			"omgusd","omgbtc","omgeth","bchusd","bchbtc","bcheth","neousd","neobtc","neoeth","etpusd",
-			"etpbtc","etpeth","qtmusd","qtmbtc","qtmeth","avtusd","avtbtc","avteth","edousd","edobtc",
-			"edoeth","btgusd","btgbtc","datusd","datbtc","dateth","qshusd","qshbtc","qsheth","yywusd",
-			"yywbtc","yyweth","gntusd","gntbtc","gnteth","sntusd","sntbtc","snteth","ioteur","batusd",
-			"batbtc","bateth","mnausd","mnabtc","mnaeth","funusd","funbtc","funeth","zrxusd","zrxbtc",
-			"zrxeth","tnbusd","tnbbtc","tnbeth","spkusd","spkbtc","spketh","trxusd","trxbtc","trxeth",
-			"rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth","sngusd",
-			"sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
+	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
+	                                     "xmrbtc","dshusd","dshbtc","btceur","xrpusd","xrpbtc","iotusd","iotbtc","ioteth","eosusd","eosbtc","eoseth",
+	                                     "sanusd","sanbtc","saneth","omgusd","omgbtc","omgeth","bchusd","bchbtc","bcheth","neousd","neobtc","neoeth",
+	                                     "etpusd","etpbtc","etpeth","qtmusd","qtmbtc","qtmeth","avtusd","avtbtc","avteth","edousd","edobtc","edoeth",
+	                                     "btgusd","btgbtc","datusd","datbtc","dateth","qshusd","qshbtc","qsheth","yywusd","yywbtc","yyweth","gntusd",
+	                                     "gntbtc","gnteth","sntusd","sntbtc","snteth","ioteur","batusd","batbtc","bateth","mnausd","mnabtc","mnaeth",
+	                                     "funusd","funbtc","funeth","zrxusd","zrxbtc","zrxeth","tnbusd","tnbbtc","tnbeth","spkusd","spkbtc","spketh",
+	                                     "trxusd","trxbtc","trxeth","rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth",
+	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
+
 
 	@SuppressWarnings("rawtypes")
 	public void getSymbols() throws UnirestException {
@@ -93,14 +92,14 @@ public class Main {
 		firstTime = false;
 	}
 	
-	public void getExchangeRates() throws UnirestException {
+	public void getExchangeRatesV1() throws UnirestException, InterruptedException {
 		double rate = 0.0;
-		//don't need below code since we are exiting when the error rate_limit is gotten in a response
-//		for ( int i = 1; i <= 30; i++) {
-//			System.out.println(tickerArray.length());
-//			tickerArray.remove(tickerArray.length()-i);
-//		}	
-		for(Object pair : tickerArray) {
+		ArrayList<String> tickerStringArray = new ArrayList<String>();
+		for(Object pair : tickerStringArray) {
+			tickerStringArray.add((String) pair);
+		}
+		Collections.shuffle(tickerStringArray);
+		for(String pair : pairings) {
 			System.out.println("Current url:" + "https://api.bitfinex.com/v1/pubticker/" + pair);
 			HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/pubticker/" + pair).asJson();
 			System.out.println(jsonResponse.getBody().getObject());
@@ -122,6 +121,7 @@ public class Main {
 				edgeMap.put((String) pair, new Edge(v1,v2,-Math.log(rate)));
 				edgeMap.put((String) pairReversed, new Edge(v2,v1, Math.log(rate)));
 			}
+			Thread.sleep(200);
 		}
 		for(Edge e: edgeMap.values()) {
 	    		setOfEdges.add(e);
@@ -143,19 +143,20 @@ public class Main {
 		Main m = new Main();
 		if(m.firstTime) m.getSymbols();
 		while(true) {
-			m.getExchangeRates();
+			m.getExchangeRatesV1();
 			Graph g = new Graph(m.vertices, m.edges);
 	//	    System.out.println("Enter starting vertex: ");
 	//		// the 3 lines below are so that we don't have to use while(true)
 	//		@SuppressWarnings("resource")
 	//		Scanner reader = new Scanner(System.in);  // Reading from System.in
 	//	    String input = reader.next();
-			Vertex src = g.findVertex("BTC");
+			// Just grabbing first vertex in vertices because we don't care about what source is.
+			Vertex src = g.vertices.get(1);
 		    g.BellmanFord(g, src);
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
-			Thread.sleep(60000);
+			Thread.sleep(90000);
 		}
 	}
 }
