@@ -42,16 +42,16 @@ public class Main {
 		tickerArray = new org.json.JSONArray();
 	}
 	
-	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
-	                                     "xmrbtc","dshusd","dshbtc","btceur","xrpusd","xrpbtc","iotusd","iotbtc","ioteth","eosusd","eosbtc","eoseth",
-	                                     "sanusd","sanbtc","saneth","omgusd","omgbtc","omgeth","bchusd","bchbtc","bcheth","neousd","neobtc","neoeth",
-	                                     "etpusd","etpbtc","etpeth","qtmusd","qtmbtc","qtmeth","avtusd","avtbtc","avteth","edousd","edobtc","edoeth",
-	                                     "btgusd","btgbtc","datusd","datbtc","dateth","qshusd","qshbtc","qsheth","yywusd","yywbtc","yyweth","gntusd",
-	                                     "gntbtc","gnteth","sntusd","sntbtc","snteth","ioteur","batusd","batbtc","bateth","mnausd","mnabtc","mnaeth",
-	                                     "funusd","funbtc","funeth","zrxusd","zrxbtc","zrxeth","tnbusd","tnbbtc","tnbeth","spkusd","spkbtc","spketh",
-	                                     "trxusd","trxbtc","trxeth","rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth",
-	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
-
+//	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
+//	                                     "xmrbtc","dshusd","dshbtc","btceur","xrpusd","xrpbtc","iotusd","iotbtc","ioteth","eosusd","eosbtc","eoseth",
+//	                                     "sanusd","sanbtc","saneth","omgusd","omgbtc","omgeth","bchusd","bchbtc","bcheth","neousd","neobtc","neoeth",
+//	                                     "etpusd","etpbtc","etpeth","qtmusd","qtmbtc","qtmeth","avtusd","avtbtc","avteth","edousd","edobtc","edoeth",
+//	                                     "btgusd","btgbtc","datusd","datbtc","dateth","qshusd","qshbtc","qsheth","yywusd","yywbtc","yyweth","gntusd",
+//	                                     "gntbtc","gnteth","sntusd","sntbtc","snteth","ioteur","batusd","batbtc","bateth","mnausd","mnabtc","mnaeth",
+//	                                     "funusd","funbtc","funeth","zrxusd","zrxbtc","zrxeth","tnbusd","tnbbtc","tnbeth","spkusd","spkbtc","spketh",
+//	                                     "trxusd","trxbtc","trxeth","rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth",
+//	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
+//
 
 	@SuppressWarnings("rawtypes")
 	public void getSymbols() throws UnirestException {
@@ -92,14 +92,29 @@ public class Main {
 		firstTime = false;
 	}
 	
+	public void getExchangeRatesV2() throws UnirestException, InterruptedException {
+		double rate = 0.0;
+		String queryString = "";
+		for(Object pair : tickerArray) {
+			queryString += "t"+pair.toString().toUpperCase() + ",";
+		}
+		System.out.println("Current url:" + "https://api.bitfinex.com/v2/tickers?symbols=" + queryString);
+		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v2/tickers?symbols=" + queryString).asJson();
+		org.json.JSONArray resp = jsonResponse.getBody().getArray();
+		for(Object o :resp) {
+			System.out.println(o);
+		}
+		System.out.println(resp.length());
+	}
+	
 	public void getExchangeRatesV1() throws UnirestException, InterruptedException {
 		double rate = 0.0;
 		ArrayList<String> tickerStringArray = new ArrayList<String>();
-		for(Object pair : tickerStringArray) {
+		for(Object pair : tickerArray) {
 			tickerStringArray.add((String) pair);
 		}
 		Collections.shuffle(tickerStringArray);
-		for(String pair : pairings) {
+		for(String pair : tickerStringArray) {
 			System.out.println("Current url:" + "https://api.bitfinex.com/v1/pubticker/" + pair);
 			HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/pubticker/" + pair).asJson();
 			System.out.println(jsonResponse.getBody().getObject());
@@ -143,7 +158,9 @@ public class Main {
 		Main m = new Main();
 		if(m.firstTime) m.getSymbols();
 		while(true) {
-			m.getExchangeRatesV1();
+			m.getSymbols();
+			m.getExchangeRatesV2();
+//			m.getExchangeRatesV1();
 			Graph g = new Graph(m.vertices, m.edges);
 	//	    System.out.println("Enter starting vertex: ");
 	//		// the 3 lines below are so that we don't have to use while(true)
