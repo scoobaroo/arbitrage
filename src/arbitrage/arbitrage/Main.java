@@ -1,19 +1,10 @@
 package arbitrage;
-import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.util.*;
-import java.util.Map.Entry;
-
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -23,6 +14,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	public ArrayList<Vertex> vertices;
 	public ArrayList<Edge> edges;
+	public static ArrayList<String> symbols;
 	public HashSet<Edge> setOfEdges;
 	public static HashMap<String,Double> exchangeRates;
 	public static HashMap<String,Double> negExchangeRates;
@@ -33,6 +25,7 @@ public class Main {
 	org.json.JSONArray tickerArray;
 	
 	private Main() {
+		symbols = new ArrayList<String>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
 		firstTime = true;
@@ -64,7 +57,8 @@ public class Main {
 		Set<String> vertexSet = new LinkedHashSet<String>();
 		Map<String,Vertex> vertexMap = new HashMap<String,Vertex>();
 		for (Object pair : tickerArray) {
-			String p = (String) pair;
+			String p = pair.toString();
+			symbols.add(p);
 			String symbol1 = p.substring(0,3);
 			String symbol2 = p.substring(3,6);
 			vertexSet.add(symbol1.toUpperCase());
@@ -102,8 +96,26 @@ public class Main {
 		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v2/tickers?symbols=" + queryString).asJson();
 		org.json.JSONArray resp = jsonResponse.getBody().getArray();
 		for(Object o :resp) {
-			System.out.println(o);
+			String str = o.toString();
+			System.out.println(str);
+			Object[] array = str.split(",");
+			String symbol = (String) array[0];
+			String pair = symbol.substring(3, 9);
+			String key1 = pair.substring(0,3);
+			String key2 = pair.substring(3,6);
+			double bid = Double.valueOf((String) array[1]);
+			double ask = Double.valueOf((String) array[3]);
+			System.out.println("key1: " + key1 + " key2: " + key2 + " bid: " + bid +" ask: " +ask);
+			Vertex v1 = findVertex(key1);
+			Vertex v2 = findVertex(key2);
+			String pairReversed = key2 + key1;
+			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
+			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
 		}
+		for(Edge e: edgeMap.values()) {
+    			setOfEdges.add(e);
+		}
+		edges = new ArrayList<Edge>(setOfEdges);
 		System.out.println(resp.length());
 	}
 	
@@ -128,13 +140,13 @@ public class Main {
 				org.json.JSONObject obj = jsonResponse.getBody().getObject();
 				rate = Double.valueOf((String) obj.get("mid"));
 				System.out.println(pair + ": " + rate);
-				String symbol1 = ((String) pair).substring(0,3);
-				String symbol2 = ((String) pair).substring(3,6);
+				String symbol1 = pair.substring(0,3);
+				String symbol2 = pair.substring(3,6);
 				Vertex v1 = findVertex(symbol1);
 				Vertex v2 = findVertex(symbol2);
 				String pairReversed = symbol2 + symbol1;
-				edgeMap.put((String) pair, new Edge(v1,v2,-Math.log(rate)));
-				edgeMap.put((String) pairReversed, new Edge(v2,v1, Math.log(rate)));
+				edgeMap.put(pair, new Edge(v1,v2,-Math.log(rate)));
+				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(rate)));
 			}
 			Thread.sleep(200);
 		}
@@ -156,24 +168,25 @@ public class Main {
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
 		Main m = new Main();
-		if(m.firstTime) m.getSymbols();
+//		Trader t = new Trader();
+//		t.getAccountInfo();
+
 		while(true) {
 			m.getSymbols();
 			m.getExchangeRatesV2();
-//			m.getExchangeRatesV1();
 			Graph g = new Graph(m.vertices, m.edges);
-	//	    System.out.println("Enter starting vertex: ");
-	//		// the 3 lines below are so that we don't have to use while(true)
-	//		@SuppressWarnings("resource")
-	//		Scanner reader = new Scanner(System.in);  // Reading from System.in
-	//	    String input = reader.next();
 			// Just grabbing first vertex in vertices because we don't care about what source is.
 			Vertex src = g.vertices.get(1);
 		    g.BellmanFord(g, src);
+		    System.out.println(m.symbols);
+		    ArrayList<Vertex> sequence = g.bestCycle;
+
+
+		    // Resetting parameters for new api query
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
-			Thread.sleep(90000);
+			Thread.sleep(5000);
 		}
 	}
 }
