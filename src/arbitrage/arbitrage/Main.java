@@ -16,15 +16,18 @@ public class Main {
 	public ArrayList<Edge> edges;
 	public static ArrayList<String> symbols;
 	public HashSet<Edge> setOfEdges;
-	public static HashMap<String,Double> exchangeRates;
-	public static HashMap<String,Double> negExchangeRates;
+	public HashMap<String,Double> exchangeRates;
+	public HashMap<String,Double> pseudoExchangeRates;
 	public Map<String, Edge> edgeMap;
 	HashMap<String, Vertex> vertexMap;
 	boolean firstTime;
+	double baseAmountUSD;
 	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	org.json.JSONArray tickerArray;
 	
 	private Main() {
+		pseudoExchangeRates = new HashMap<String,Double>();
+		exchangeRates = new HashMap<String,Double>();
 		symbols = new ArrayList<String>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
@@ -111,6 +114,8 @@ public class Main {
 			String pairReversed = key2 + key1;
 			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
 			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
+			exchangeRates.put(pair.toLowerCase(), bid);
+			exchangeRates.put(pairReversed.toLowerCase(), ask);
 		}
 		for(Edge e: edgeMap.values()) {
     			setOfEdges.add(e);
@@ -165,9 +170,26 @@ public class Main {
 		return null; 
     }
     
+    public void makePseudoExchangeRates() {
+    		pseudoExchangeRates = exchangeRates;
+    		
+    }
+    
+    
+    public double convertToUSD(String edge) {
+    		double rate = exchangeRates.get(edge);
+    		return rate;
+    }
+    
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
 		Main m = new Main();
+		System.out.println("Enter base amount(USD) to execute in trade sequences: ");
+		@SuppressWarnings("resource")
+		Scanner reader = new Scanner(System.in);  // Reading from System.in
+		String baseAmountUSDString = reader.next();
+		m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
+		System.out.println(m.baseAmountUSD);
 //		Trader t = new Trader();
 //		t.getAccountInfo();
 
@@ -175,13 +197,13 @@ public class Main {
 			m.getSymbols();
 			m.getExchangeRatesV2();
 			Graph g = new Graph(m.vertices, m.edges);
+			
 			// Just grabbing first vertex in vertices because we don't care about what source is.
 			Vertex src = g.vertices.get(1);
 		    g.BellmanFord(g, src);
 		    System.out.println(m.symbols);
 		    ArrayList<Vertex> sequence = g.bestCycle;
-
-
+		    System.out.println(m.exchangeRates);
 		    // Resetting parameters for new api query
 		    m.edges.clear();
 		    m.setOfEdges.clear();
