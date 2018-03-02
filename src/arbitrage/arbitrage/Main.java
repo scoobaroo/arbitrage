@@ -16,8 +16,7 @@ public class Main {
 	public ArrayList<Edge> edges;
 	public static ArrayList<String> symbols;
 	public HashSet<Edge> setOfEdges;
-	public HashMap<String,Double> exchangeRates;
-	public HashMap<String,Double> pseudoExchangeRates;
+	public LinkedHashMap<String,Double> exchangeRates;
 	public Map<String, Edge> edgeMap;
 	HashMap<String, Vertex> vertexMap;
 	boolean firstTime;
@@ -26,8 +25,7 @@ public class Main {
 	org.json.JSONArray tickerArray;
 	
 	private Main() {
-		pseudoExchangeRates = new HashMap<String,Double>();
-		exchangeRates = new HashMap<String,Double>();
+		exchangeRates = new LinkedHashMap<String,Double>();
 		symbols = new ArrayList<String>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<Edge>();
@@ -115,7 +113,7 @@ public class Main {
 			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
 			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
 			exchangeRates.put(pair.toLowerCase(), bid);
-			exchangeRates.put(pairReversed.toLowerCase(), ask);
+			exchangeRates.put(pairReversed.toLowerCase(), 1/ask);
 		}
 		for(Edge e: edgeMap.values()) {
     			setOfEdges.add(e);
@@ -169,17 +167,9 @@ public class Main {
 		}
 		return null; 
     }
-    
-    public void makePseudoExchangeRates() {
-    		pseudoExchangeRates = exchangeRates;
-    		
-    }
-    
-    
-    public double convertToUSD(String edge) {
-    		double rate = exchangeRates.get(edge);
-    		return rate;
-    }
+     
+    //find out if all vertices are connected to BTC/USD
+    //make graph with graphstream
     
 	@SuppressWarnings("rawtypes")
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
@@ -204,6 +194,11 @@ public class Main {
 		    System.out.println(m.symbols);
 		    ArrayList<Vertex> sequence = g.bestCycle;
 		    System.out.println(m.exchangeRates);
+		    System.out.println(m.exchangeRates.size());
+		    CurrencyConverter.setExchangeRates(m.exchangeRates);
+		    System.out.println("Testing currency Converter:");
+		    System.out.println(CurrencyConverter.convertUSDToCoin("ETH", 1));
+		    System.out.println(CurrencyConverter.convertCoinToUSD("ETH", 1));
 		    // Resetting parameters for new api query
 		    m.edges.clear();
 		    m.setOfEdges.clear();
