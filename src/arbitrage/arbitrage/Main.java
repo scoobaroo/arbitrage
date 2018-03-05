@@ -2,8 +2,12 @@ package arbitrage;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.*;
 import org.json.simple.parser.ParseException;
+import org.knowm.xchange.Exchange;
+import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -20,7 +24,7 @@ public class Main {
 	public Map<String, Edge> edgeMap;
 	HashMap<String, Vertex> vertexMap;
 	boolean firstTime;
-	double baseAmountUSD;
+	BigDecimal baseAmountUSD;
 	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	org.json.JSONArray tickerArray;
 	
@@ -178,9 +182,10 @@ public class Main {
 		@SuppressWarnings("resource")
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		String baseAmountUSDString = reader.next();
-		m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
+		m.baseAmountUSD = new BigDecimal(Double.valueOf(baseAmountUSDString));
 		System.out.println(m.baseAmountUSD);
-//		Trader t = new Trader();
+		Exchange bitfinexExchange = new BitfinexExchange();
+		Trader t = new Trader(bitfinexExchange);
 //		t.getAccountInfo();
 
 		while(true) {
@@ -193,6 +198,11 @@ public class Main {
 		    g.BellmanFord(g, src);
 		    System.out.println(m.symbols);
 		    ArrayList<Vertex> sequence = g.bestCycle;
+		    double tradingFee = g.bestCycle.size() * 0.002;
+		    if(1+tradingFee<g.maxRatio) {
+		    		System.out.println("Executing trade sequence");
+		    		t.executeTradeSequence(sequence, m.baseAmountUSD);
+		    }
 		    System.out.println(m.exchangeRates);
 		    System.out.println(m.exchangeRates.size());
 		    CurrencyConverter.setExchangeRates(m.exchangeRates);
@@ -203,7 +213,7 @@ public class Main {
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
-			Thread.sleep(5000);
+			Thread.sleep(15000);
 		}
 	}
 }

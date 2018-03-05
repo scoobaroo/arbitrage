@@ -1,6 +1,7 @@
 package arbitrage;
 import java.io.IOException;
 import java.math.BigDecimal;
+
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bitfinex.v1.BitfinexOrderType;
 import org.knowm.xchange.bitfinex.v1.service.BitfinexTradeServiceRaw;
@@ -22,17 +23,23 @@ public class Trade {
 		this.exchange = exchange;
 	}
 	
-	public void execute() throws IOException {
+	public MarketOrder createMarketOrder(){
 		String key1 = pair.substring(0, 3);
 		String key2 = pair.substring(3, 6);
 		CurrencyPair pair = new CurrencyPair(key1, key2);
-		BitfinexTradeServiceRaw tradeService = (BitfinexTradeServiceRaw) exchange.getTradeService();
 		if(buyOrSell.toUpperCase().equals("BUY")) {
 		    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(amount).build();
-		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
+//		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
+		    System.out.println("creating a BUY order");
+		    System.out.println(marketOrder.toString());
+		    return marketOrder;
+		    
 		} else {
 			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(amount).build();
-		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
+//		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
+			System.out.println("creating a SELL order");
+		    System.out.println(marketOrder.toString());
+		    return marketOrder;
 		}
 	}
 }

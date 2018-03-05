@@ -10,6 +10,8 @@ public class Graph {
     public ArrayList<Edge> edges;
     public ArrayList<Double> cycleWeightList;
     public ArrayList<Vertex> bestCycle;
+    public int cycleSize;
+    public double maxRatio;
     public HashMap<Vertex, Double> dist;
     double inf = Double.POSITIVE_INFINITY;
     
@@ -87,9 +89,9 @@ public class Graph {
         System.out.println("\n==============================BELLMAN FORD ENDED=================================");
         System.out.println("\n=================================================================================");
         System.out.println("\nThe number of negative cycles, or arbitrage opportunities detected were :"+totalCycles);
-        Double maxRatio = Collections.max(cycleWeightList);
+        maxRatio = Collections.max(cycleWeightList);
         System.out.println("Maximum Profit Ratio found: "+ maxRatio);
-        int cycleSize = bestCycle.size() + 1;
+        	cycleSize = bestCycle.size();
         System.out.println("Number of trades in sequence to execute:" + cycleSize);
         System.out.println(bestCycle);
         //uncomment below to see Vertex Distance from Source
