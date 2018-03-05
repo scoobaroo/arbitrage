@@ -24,7 +24,7 @@ public class Main {
 	public Map<String, Edge> edgeMap;
 	HashMap<String, Vertex> vertexMap;
 	boolean firstTime;
-	BigDecimal baseAmountUSD;
+	double baseAmountUSD;
 	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	org.json.JSONArray tickerArray;
 	
@@ -182,7 +182,7 @@ public class Main {
 		@SuppressWarnings("resource")
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		String baseAmountUSDString = reader.next();
-		m.baseAmountUSD = new BigDecimal(Double.valueOf(baseAmountUSDString));
+		m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
 		System.out.println(m.baseAmountUSD);
 		Exchange bitfinexExchange = new BitfinexExchange();
 		Trader t = new Trader(bitfinexExchange);

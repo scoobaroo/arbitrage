@@ -32,8 +32,7 @@ public class Trade {
 //		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
 		    System.out.println("creating a BUY order");
 		    System.out.println(marketOrder.toString());
-		    return marketOrder;
-		    
+		    return marketOrder;	    
 		} else {
 			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(amount).build();
 //		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);

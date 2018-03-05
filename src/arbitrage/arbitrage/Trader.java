@@ -77,17 +77,16 @@ public class Trader {
 		    		symbol = key1+key2;
 	    		}
 	    		if(!Main.symbols.contains(symbol)) {
-				orderType = "bid";
+				orderType = "buy";
 				symbol = key2+key1;
-				amt = CurrencyConverter.convertUSDToCoin(key2, amountUSD)
+				amt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
 			} else {
-				orderType = "ask";
+				orderType = "sell";
 				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 			}
-	    		//need to convert amountUSD to correct amount
 	    		Trade trade = new Trade(exchange, amt, symbol, orderType);
 	    		marketOrderList.add(trade.createMarketOrder());
 	    }
-	    tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);
+//	    tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);
 	}
 }
