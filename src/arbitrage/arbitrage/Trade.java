@@ -28,16 +28,16 @@ public class Trade {
 		String key2 = pair.substring(3, 6);
 		CurrencyPair pair = new CurrencyPair(key1, key2);
 		if(buyOrSell.toUpperCase().equals("BUY")) {
+			System.out.println("creating a BUY order");
 		    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(amount).build();
 //		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
-		    System.out.println("creating a BUY order");
-		    System.out.println(marketOrder.toString());
+		    System.out.println(marketOrder);
 		    return marketOrder;	    
 		} else {
+			System.out.println("creating a SELL order");
 			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(amount).build();
 //		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
-			System.out.println("creating a SELL order");
-		    System.out.println(marketOrder.toString());
+			System.out.println(marketOrder);
 		    return marketOrder;
 		}
 	}

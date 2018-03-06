@@ -182,6 +182,7 @@ public class Main {
 		@SuppressWarnings("resource")
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		String baseAmountUSDString = reader.next();
+		reader.close();
 		m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
 		System.out.println(m.baseAmountUSD);
 		Exchange bitfinexExchange = new BitfinexExchange();
@@ -192,11 +193,11 @@ public class Main {
 			m.getSymbols();
 			m.getExchangeRatesV2();
 			Graph g = new Graph(m.vertices, m.edges);
-			
+			CurrencyConverter.setExchangeRates(m.exchangeRates);
+		    System.out.println(Main.symbols);
 			// Just grabbing first vertex in vertices because we don't care about what source is.
 			Vertex src = g.vertices.get(1);
 		    g.BellmanFord(g, src);
-		    System.out.println(m.symbols);
 		    ArrayList<Vertex> sequence = g.bestCycle;
 		    double tradingFee = g.bestCycle.size() * 0.002;
 		    if(1+tradingFee<g.maxRatio) {
@@ -204,11 +205,10 @@ public class Main {
 		    		t.executeTradeSequence(sequence, m.baseAmountUSD);
 		    }
 		    System.out.println(m.exchangeRates);
-		    System.out.println(m.exchangeRates.size());
-		    CurrencyConverter.setExchangeRates(m.exchangeRates);
+		    System.out.println("Size of exchange rates:" + m.exchangeRates.size());
 		    System.out.println("Testing currency Converter:");
-		    System.out.println(CurrencyConverter.convertUSDToCoin("ETH", 1));
-		    System.out.println(CurrencyConverter.convertCoinToUSD("ETH", 1));
+		    System.out.println("Converting one USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
+		    System.out.println("Converting one ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
 		    // Resetting parameters for new api query
 		    m.edges.clear();
 		    m.setOfEdges.clear();
