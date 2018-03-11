@@ -4,7 +4,8 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 
 public class CurrencyConverter {
-	public static HashMap<String,Double> exchangeRates;
+	
+	protected static HashMap<String,Double> exchangeRates;
 	
 	public static void setExchangeRates(HashMap<String,Double> er) {
 		exchangeRates = er;
@@ -33,4 +34,5 @@ public class CurrencyConverter {
     		double rate = exchangeRates.get(symbol);
     		return new BigDecimal(rate * amountCoin);
     }
+    
 }

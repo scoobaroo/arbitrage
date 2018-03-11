@@ -16,17 +16,18 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class Main {
-	public ArrayList<Vertex> vertices;
-	public ArrayList<Edge> edges;
-	public static ArrayList<String> symbols;
-	public HashSet<Edge> setOfEdges;
-	public LinkedHashMap<String,Double> exchangeRates;
-	public Map<String, Edge> edgeMap;
-	HashMap<String, Vertex> vertexMap;
-	boolean firstTime;
-	double baseAmountUSD;
-	Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
-	org.json.JSONArray tickerArray;
+	static boolean debug = false;
+	protected ArrayList<Vertex> vertices;
+	protected ArrayList<Edge> edges;
+	protected static ArrayList<String> symbols;
+	protected HashSet<Edge> setOfEdges;
+	protected LinkedHashMap<String,Double> exchangeRates;
+	protected Map<String, Edge> edgeMap;
+	protected HashMap<String, Vertex> vertexMap;
+	protected boolean firstTime;
+	protected double baseAmountUSD;
+	protected Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
+	protected org.json.JSONArray tickerArray;
 	
 	private Main() {
 		exchangeRates = new LinkedHashMap<String,Double>();
@@ -53,12 +54,12 @@ public class Main {
 
 	@SuppressWarnings("rawtypes")
 	public void getSymbols() throws UnirestException {
-		System.out.println("URL: " + "https://api.bitfinex.com/v1/symbols");
+		if (debug) System.out.println("URL: " + "https://api.bitfinex.com/v1/symbols");
 		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v1/symbols").asJson();
-		System.out.println(jsonResponse.getBody());
+		if (debug) System.out.println(jsonResponse.getBody());
 		JsonNode body = jsonResponse.getBody();
 		tickerArray = body.getArray();
-		System.out.println("Number of tickers received: " + tickerArray.length());
+		if (debug) System.out.println("Number of tickers received: " + tickerArray.length());
 		Set<String> vertexSet = new LinkedHashSet<String>();
 		Map<String,Vertex> vertexMap = new HashMap<String,Vertex>();
 		for (Object pair : tickerArray) {
@@ -69,20 +70,12 @@ public class Main {
 			vertexSet.add(symbol1.toUpperCase());
 			vertexSet.add(symbol2.toUpperCase());
 		}
-		// vertices before bitfinex changed symbols available
-		String[] oldVertices = { "BTC", "USD", "LTC", "EUR", "DSH", "ETH", "ETP", "SAN", "QTM", "EDO", "RRT", "XRP",
-				"BT1", "BT2", "BCC", "BCH", "QSH", "EOS", "OMG", "IOT", "BCH", "QSH", "EOS", "DAT", "YYW", "ZEC", "NEO",
-				"XMR", "AVT" };
-		for(String v : oldVertices) {
-			vertexSet.add(v);
-		}
-		System.out.println();
-		System.out.println("vertexSet size: " + vertexSet.size());
+		if(debug) System.out.println("vertexSet size: " + vertexSet.size());
 		// Creating unique set of vertices
 		for(String v:vertexSet) {
 			vertexMap.put(v, new Vertex(CryptoCurrency.get(v),v));
 		}
-		System.out.println("vertexMap size: " + vertexMap.size());
+		if (debug) System.out.println("vertexMap size: " + vertexMap.size());
 		Set<Vertex> setOfVertices = new HashSet<Vertex>();
 		for(Vertex v : vertexMap.values()) {
 			setOfVertices.add(v);
@@ -97,12 +90,12 @@ public class Main {
 		for(Object pair : tickerArray) {
 			queryString += "t"+pair.toString().toUpperCase() + ",";
 		}
-		System.out.println("Current url:" + "https://api.bitfinex.com/v2/tickers?symbols=" + queryString);
+		if (debug) System.out.println("Current url:" + "https://api.bitfinex.com/v2/tickers?symbols=" + queryString);
 		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.bitfinex.com/v2/tickers?symbols=" + queryString).asJson();
 		org.json.JSONArray resp = jsonResponse.getBody().getArray();
 		for(Object o :resp) {
 			String str = o.toString();
-			System.out.println(str);
+			if (debug) System.out.println(str);
 			Object[] array = str.split(",");
 			String symbol = (String) array[0];
 			String pair = symbol.substring(3, 9);
@@ -110,7 +103,7 @@ public class Main {
 			String key2 = pair.substring(3,6);
 			double bid = Double.valueOf((String) array[1]);
 			double ask = Double.valueOf((String) array[3]);
-			System.out.println("key1: " + key1 + " key2: " + key2 + " bid: " + bid +" ask: " +ask);
+			if (debug) System.out.println("key1: " + key1 + " key2: " + key2 + " bid: " + bid +" ask: " +ask);
 			Vertex v1 = findVertex(key1);
 			Vertex v2 = findVertex(key2);
 			String pairReversed = key2 + key1;
@@ -123,7 +116,7 @@ public class Main {
     			setOfEdges.add(e);
 		}
 		edges = new ArrayList<Edge>(setOfEdges);
-		System.out.println(resp.length());
+		if (debug) System.out.println("resp length: " + resp.length());
 	}
 	
 	public void getExchangeRatesV1() throws UnirestException, InterruptedException {
@@ -175,45 +168,71 @@ public class Main {
     //find out if all vertices are connected to BTC/USD
     //make graph with graphstream
     
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
 		Main m = new Main();
-		System.out.println("Enter base amount(USD) to execute in trade sequences: ");
-		@SuppressWarnings("resource")
-		Scanner reader = new Scanner(System.in);  // Reading from System.in
-		String baseAmountUSDString = reader.next();
-		reader.close();
-		m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
-		System.out.println(m.baseAmountUSD);
 		Exchange bitfinexExchange = new BitfinexExchange();
 		Trader t = new Trader(bitfinexExchange);
-//		t.getAccountInfo();
-
-		while(true) {
-			m.getSymbols();
-			m.getExchangeRatesV2();
-			Graph g = new Graph(m.vertices, m.edges);
-			CurrencyConverter.setExchangeRates(m.exchangeRates);
-		    System.out.println(Main.symbols);
-			// Just grabbing first vertex in vertices because we don't care about what source is.
-			Vertex src = g.vertices.get(1);
-		    g.BellmanFord(g, src);
-		    ArrayList<Vertex> sequence = g.bestCycle;
-		    double tradingFee = g.bestCycle.size() * 0.002;
-		    if(1+tradingFee<g.maxRatio) {
-		    		System.out.println("Executing trade sequence");
-		    		t.executeTradeSequence(sequence, m.baseAmountUSD);
-		    }
-		    System.out.println(m.exchangeRates);
-		    System.out.println("Size of exchange rates:" + m.exchangeRates.size());
-		    System.out.println("Testing currency Converter:");
-		    System.out.println("Converting one USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
-		    System.out.println("Converting one ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
-		    // Resetting parameters for new api query
+		Scanner reader = new Scanner(System.in);  // Reading from System.in
+		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
+		int choice = Integer.valueOf(reader.next());
+		if(choice==999) {
+			t.convertCoinsToBTC();
+		} else {
+			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
+			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
+			if(choiceToConvertBTCToCoins==888) {
+				m.getSymbols();
+				m.getExchangeRatesV2();
+				CurrencyConverter.setExchangeRates(m.exchangeRates);
+				t.setExchangeRates(m.exchangeRates);
+				t.setVertices(m.vertices);
+				System.out.println(t.vertices);
+				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies: ");
+				double amountBTCToConvert = Double.valueOf(reader.next());
+				t.convertBTCToCoins(amountBTCToConvert);
+			}
+			System.out.println("Enter base amount(USD) to execute in trade sequences: ");	
+			String baseAmountUSDString = reader.next();
+			m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
+			System.out.println(m.baseAmountUSD);
+	//		t.getAccountInfo();
+			reader.close();
+		    
+			m.vertices.clear();
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
-			Thread.sleep(15000);
+			
+			while(true) {
+				m.getSymbols();
+				m.getExchangeRatesV2();
+				Graph g = new Graph(m.vertices, m.edges, Main.debug);
+				CurrencyConverter.setExchangeRates(m.exchangeRates);
+			    if (debug) System.out.println(Main.symbols);
+				// Just grabbing first vertex in vertices because we don't care about what source is.
+				Vertex src = g.vertices.get(1);
+			    g.BellmanFord(g, src);
+			    ArrayList<Vertex> sequence = g.bestCycle;
+			    double tradingFee = g.bestCycle.size() * 0.002;
+			    if(1+tradingFee<g.maxRatio) {
+			    		System.out.println("Executing trade sequence");
+			    		t.executeTradeSequence(sequence, m.baseAmountUSD);
+			    }
+			    if(debug) {
+				    System.out.println(m.exchangeRates);
+				    System.out.println("Size of exchange rates:" + m.exchangeRates.size());
+				    System.out.println("Testing currency Converter:");
+				    System.out.println("Converting one USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
+				    System.out.println("Converting one ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
+			    }
+			    // Resetting parameters for new api query
+			    m.vertices.clear();
+			    m.edges.clear();
+			    m.setOfEdges.clear();
+			    m.edgeMap.clear();
+				Thread.sleep(15000);
+			}
 		}
 	}
 }
