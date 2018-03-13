@@ -178,6 +178,7 @@ public class Main {
 		int choice = Integer.valueOf(reader.next());
 		if(choice==999) {
 			t.convertCoinsToBTC();
+			return;
 		} else {
 			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
 			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
@@ -215,6 +216,7 @@ public class Main {
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
 			    double tradingFee = g.bestCycle.size() * 0.002;
+			    System.out.println(sequence);
 			    if(1+tradingFee<g.maxRatio) {
 			    		System.out.println("Executing trade sequence");
 			    		t.executeTradeSequence(sequence, m.baseAmountUSD);

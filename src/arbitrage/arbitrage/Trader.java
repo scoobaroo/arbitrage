@@ -65,6 +65,7 @@ public class Trader {
 	}
 	
 	public void executeTradeSequence(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
+		System.out.println("Inside trader's executeTradeSequence");
 		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 	    for(int i = 0; i< sequence.size(); i++) {
 	    		String key1;
@@ -112,7 +113,10 @@ public class Trader {
 		for (Vertex v : vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
 				String pair = "btc"+v.name;
-				Trade trade = new Trade(exchange, wallet.getBalance(new Currency(v.name)).getAvailable(), pair, "buy");
+				// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
+				// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
+				Trade trade = new Trade(exchange, CurrencyConverter.convertCoinToBTC(v.name, wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()), pair, "buy");
+				// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
 				convertCoinToBTCList.add(trade.createMarketOrder());
 			}
 		}

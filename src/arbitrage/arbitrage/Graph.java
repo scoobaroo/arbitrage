@@ -96,9 +96,11 @@ public class Graph {
 	        System.out.println("\n==============================BELLMAN FORD ENDED=================================");
 	        System.out.println("\n=================================================================================");
 	        System.out.println("\nThe number of negative cycles, or arbitrage opportunities detected were :"+totalCycles);
+        }
 	        if(cycleWeightList.size()>0) maxRatio = Collections.max(cycleWeightList);
 	        System.out.println("Maximum Profit Ratio found: "+ maxRatio);
-	        	cycleSize = bestCycle.size();
+	    		cycleSize = bestCycle.size();
+	    if(debug==true) {
 	        System.out.println("Number of trades in sequence to execute:" + cycleSize);
 	        System.out.println(bestCycle);
         }
