@@ -11,28 +11,28 @@ public class CurrencyConverter {
 		exchangeRates = er;
 	}
 	
-    public static BigDecimal convertUSDToCoin(String currency, double amountUSD) {
+    public static double convertUSDToCoin(String currency, double amountUSD) {
 		String symbol = "usd"+currency.toLowerCase();
     		double rate = exchangeRates.get(symbol);
-		return new BigDecimal(amountUSD * rate);
+		return rate * amountUSD;
     }
     
-    public static BigDecimal convertCoinToUSD(String currency, double amountCoin) {
+    public static double convertCoinToUSD(String currency, double amountCoin) {
     		String symbol = currency.toLowerCase() + "usd"; 
     		double rate = exchangeRates.get(symbol);
-    		return new BigDecimal(rate*amountCoin);
+    		return rate * amountCoin;
     }
     
-    public static BigDecimal convertBTCToCoin(String currency, double amountBTC) {
+    public static double convertBTCToCoin(String currency, double amountBTC) {
     		String symbol = "btc"+currency.toLowerCase(); 
 		double rate = exchangeRates.get(symbol);
-		return new BigDecimal(rate * amountBTC );
+		return rate * amountBTC;
     }
     
-    public static BigDecimal convertCoinToBTC(String currency, double amountCoin) {
+    public static double convertCoinToBTC(String currency, double amountCoin) {
     		String symbol = currency.toLowerCase() + "btc"; 
     		double rate = exchangeRates.get(symbol);
-    		return new BigDecimal(rate * amountCoin);
+    		return rate * amountCoin;
     }
     
 }

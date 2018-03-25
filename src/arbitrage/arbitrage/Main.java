@@ -16,7 +16,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class Main {
-	static boolean debug = false;
+	static boolean debug = true;
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
@@ -204,12 +204,14 @@ public class Main {
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
-			
+			int count = 0;
+			double maxRatios = 0;
 			while(true) {
 				m.getSymbols();
 				m.getExchangeRatesV2();
-				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 				CurrencyConverter.setExchangeRates(m.exchangeRates);
+				t.setExchangeRates(m.exchangeRates);
+				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
 				// Just grabbing first vertex in vertices because we don't care about what source is.
 				Vertex src = g.vertices.get(1);
@@ -218,15 +220,21 @@ public class Main {
 			    double tradingFee = g.bestCycle.size() * 0.002;
 			    System.out.println(sequence);
 			    if(1+tradingFee<g.maxRatio) {
+			    		count++;
+			    		maxRatios += g.maxRatio;
 			    		System.out.println("Executing trade sequence");
-			    		t.executeTradeSequence(sequence, m.baseAmountUSD);
+//			    		t.executeTradeSequenceWithList(sequence, m.baseAmountUSD);
+			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
+			    		double ratio = maxRatios/count;
+			    		System.out.println("Average ratio so far: " + ratio);
+			    		System.out.println("Number of trades executed so far: " + count);
 			    }
 			    if(debug) {
 				    System.out.println(m.exchangeRates);
 				    System.out.println("Size of exchange rates:" + m.exchangeRates.size());
 				    System.out.println("Testing currency Converter:");
-				    System.out.println("Converting one USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
-				    System.out.println("Converting one ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
+				    System.out.println("Converting 1 USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
+				    System.out.println("Converting 1 ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
 			    }
 			    // Resetting parameters for new api query
 			    m.vertices.clear();

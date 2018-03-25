@@ -1,37 +1,26 @@
 package arbitrage;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
 
 import org.knowm.xchange.Exchange;
-import org.knowm.xchange.ExchangeFactory;
-import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
 import org.knowm.xchange.bitfinex.v1.BitfinexOrderType;
-import org.knowm.xchange.bitfinex.v1.service.BitfinexTradeServiceRaw;
 import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.service.account.AccountService;
+import org.knowm.xchange.service.trade.TradeService;
 
 public class Trader {
 	protected Exchange exchange;
-	protected BitfinexTradeServiceRaw tradeService;
+	protected TradeService tradeService;
 	protected HashMap<String,Double> exchangeRates;
 	protected ArrayList<Vertex> vertices;
 	
 	public Trader(Exchange ex) {
 		this.exchange = ex;
-		tradeService = (BitfinexTradeServiceRaw) exchange.getTradeService();
 //		Properties prop = new Properties();
 //		InputStream input = null;
 //		try {
@@ -54,7 +43,8 @@ public class Trader {
 //		exSpec.setUserName("");
 //		exSpec.setApiKey("");
 //		exSpec.setSecretKey("");
-//		bitfinex = ExchangeFactory.INSTANCE.createExchange(exSpec);
+//		Exchange bitfinex = ExchangeFactory.INSTANCE.createExchange(exSpec);
+//		tradeService = bitfinex.getTradeService();
 	}
 	
 	public AccountInfo getAccountInfo() throws IOException {
@@ -63,16 +53,14 @@ public class Trader {
 		System.out.println(accountInfo.toString());
 		return accountInfo;
 	}
-	
-	public void executeTradeSequence(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
-		System.out.println("Inside trader's executeTradeSequence");
-		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
+	public void executeTradeSequenceSequentially(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
+		System.out.println("Inside trader's executeTradeSequenceSequentially");
+		double amt = 0;
 	    for(int i = 0; i< sequence.size(); i++) {
 	    		String key1;
 	    		String key2;
 	    		String symbol;
 	    		String orderType;
-	    		BigDecimal amt;
 	    		if(i==sequence.size()-1) {
 	    			//linking up last and first
 	    			key1 = sequence.get(sequence.size()-1).toString().toLowerCase(); 
@@ -83,8 +71,8 @@ public class Trader {
 		    		key2 = sequence.get(i+1).toString().toLowerCase();
 		    		symbol = key1+key2;
 	    		}
-	    		if(!Main.symbols.contains(symbol)) {
-				orderType = "buy";
+		    	if(!Main.symbols.contains(symbol)) {
+		    		orderType = "buy";
 				symbol = key2+key1;
 				amt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
 			} else {
@@ -92,7 +80,69 @@ public class Trader {
 				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 			}
 	    		Trade trade = new Trade(amt, symbol, orderType);
-	    		marketOrderList.add(trade.createMarketOrder());
+	    		MarketOrder mo = trade.createMarketOrder();
+//	    		tradeService.placeMarketOrder(mo);
+	    }
+	}
+	
+	public void executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
+		System.out.println("Inside trader's executeTradeSequenceWithList");
+		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
+		double amt = 0;
+		double newAmt = 0;
+	    for(int i = 0; i< sequence.size(); i++) {
+	    		String key1;
+	    		String key2;
+	    		String symbol;
+	    		String orderType;
+	    		if(i==sequence.size()-1) {
+	    			//linking up last and first
+	    			key1 = sequence.get(sequence.size()-1).toString().toLowerCase(); 
+	    			key2 = sequence.get(0).toString().toLowerCase();;
+	    			symbol = key1+key2;
+	    		} else {
+	    			key1 = sequence.get(i).toString().toLowerCase();
+		    		key2 = sequence.get(i+1).toString().toLowerCase();
+		    		symbol = key1+key2;
+	    		}
+	    		if(i==0) {
+		    		if(!Main.symbols.contains(symbol)) {
+					orderType = "buy";
+					symbol = key2+key1;
+					amt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
+				} else {
+					orderType = "sell";
+					amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+				}
+		    		Trade trade = new Trade(amt, symbol, orderType);
+		    		marketOrderList.add(trade.createMarketOrder());
+	    		} else if(i==1){
+		    		if(!Main.symbols.contains(symbol)) {
+					orderType = "buy";
+					symbol = key2+key1;
+//					newAmt = exchangeRates.get(symbol) * amt;
+					newAmt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
+				} else {
+					orderType = "sell";
+//					newAmt = exchangeRates.get(symbol) * amt;
+					newAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+				}
+		    		Trade trade = new Trade(newAmt, symbol, orderType);
+		    		marketOrderList.add(trade.createMarketOrder());
+	    		} else {
+		    		if(!Main.symbols.contains(symbol)) {
+					orderType = "buy";
+					symbol = key2+key1;
+//					newAmt = exchangeRates.get(symbol) * newAmt;
+					newAmt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
+				} else {
+					orderType = "sell";
+//					newAmt = exchangeRates.get(symbol) * newAmt;
+					newAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+				}
+		    		Trade trade = new Trade(newAmt, symbol, orderType);
+		    		marketOrderList.add(trade.createMarketOrder());
+	    		}
 	    }
 //	    tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);
 	}
@@ -124,6 +174,7 @@ public class Trader {
 		System.out.println(convertCoinToBTCList);
 //		tradeService.placeBitfinexOrderMulti(convertCoinToBTCList, BitfinexOrderType.MARKET);
 	}
+	
 	public void convertBTCToCoins(double amountBTC) throws IOException {
 		System.out.println("Converting " + amountBTC + " BTC to all availabe cryptocurrencies");
 		double btcPerCoin = amountBTC/(vertices.size()-1);
@@ -131,11 +182,11 @@ public class Trader {
 		for (Vertex v : vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
 				String pair = "btc"+v.name;
-				Trade trade = new Trade(new BigDecimal(btcPerCoin), pair, "sell");
+				Trade trade = new Trade(btcPerCoin, pair, "sell");
 				convertBTCToCoinList.add(trade.createMarketOrder());
 			}
 		}
-		System.out.println(convertBTCToCoinList.size());
+		System.out.println("Converting to " + convertBTCToCoinList.size() + " coins");
 		System.out.println(convertBTCToCoinList);
 //		tradeService.placeBitfinexOrderMulti(convertBTCToCoinList, BitfinexOrderType.MARKET);
 	}
