@@ -2,6 +2,7 @@ package arbitrage;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.knowm.xchange.Exchange;
@@ -87,60 +88,59 @@ public class Trader {
 	
 	public void executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
 		System.out.println("Inside trader's executeTradeSequenceWithList");
+		System.out.println("Main.symbols:");
+		System.out.println(Main.symbols);
 		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 		double amt = 0;
-		double newAmt = 0;
-	    for(int i = 0; i< sequence.size(); i++) {
+		double startingAmt = 0;
+		double oldAmt = 0;
+		sequence.add(sequence.get(0));
+//		Collections.reverse(sequence);
+//		System.out.println("reversed sequence:");
+//		System.out.println(sequence);
+	    for(int i = 0; i< sequence.size()-1 ; i++) {
 	    		String key1;
 	    		String key2;
 	    		String symbol;
 	    		String orderType;
-	    		if(i==sequence.size()-1) {
-	    			//linking up last and first
-	    			key1 = sequence.get(sequence.size()-1).toString().toLowerCase(); 
-	    			key2 = sequence.get(0).toString().toLowerCase();;
-	    			symbol = key1+key2;
-	    		} else {
-	    			key1 = sequence.get(i).toString().toLowerCase();
-		    		key2 = sequence.get(i+1).toString().toLowerCase();
-		    		symbol = key1+key2;
-	    		}
+    			key1 = sequence.get(i).toString().toLowerCase();
+	    		key2 = sequence.get(i+1).toString().toLowerCase();
+	    		symbol = key1+key2;
+				double rate = exchangeRates.get(symbol);
+				System.out.println("We got " + rate + " for " +symbol);
 	    		if(i==0) {
 		    		if(!Main.symbols.contains(symbol)) {
-					orderType = "buy";
-					symbol = key2+key1;
-					amt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
-				} else {
-					orderType = "sell";
-					amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-				}
-		    		Trade trade = new Trade(amt, symbol, orderType);
-		    		marketOrderList.add(trade.createMarketOrder());
-	    		} else if(i==1){
-		    		if(!Main.symbols.contains(symbol)) {
-					orderType = "buy";
-					symbol = key2+key1;
-//					newAmt = exchangeRates.get(symbol) * amt;
-					newAmt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
-				} else {
-					orderType = "sell";
-//					newAmt = exchangeRates.get(symbol) * amt;
-					newAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-				}
-		    		Trade trade = new Trade(newAmt, symbol, orderType);
+						orderType = "buy";
+						symbol = key2+key1;
+						startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
+						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+					} else {
+						orderType = "sell";
+						startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
+						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+					}
+		    		Trade trade = new Trade(startingAmt, symbol, orderType);
+		    		System.out.println();
 		    		marketOrderList.add(trade.createMarketOrder());
 	    		} else {
 		    		if(!Main.symbols.contains(symbol)) {
-					orderType = "buy";
-					symbol = key2+key1;
-//					newAmt = exchangeRates.get(symbol) * newAmt;
-					newAmt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
-				} else {
-					orderType = "sell";
-//					newAmt = exchangeRates.get(symbol) * newAmt;
-					newAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-				}
-		    		Trade trade = new Trade(newAmt, symbol, orderType);
+						orderType = "buy";
+						symbol = key2+key1;
+						oldAmt = amt;
+						amt = rate * oldAmt;
+						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
+					} else {
+						orderType = "sell";
+						oldAmt = amt;
+						amt = rate * oldAmt;
+						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
+					}
+		    		Trade trade = new Trade(amt, symbol, orderType);
+		    		System.out.println();
 		    		marketOrderList.add(trade.createMarketOrder());
 	    		}
 	    }
@@ -149,6 +149,7 @@ public class Trader {
 	
 	public void setExchangeRates(HashMap<String,Double> er) {
 		exchangeRates = er;
+		System.out.println(exchangeRates);
 	}
 	
 	public void setVertices(ArrayList<Vertex> v) {

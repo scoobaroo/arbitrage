@@ -16,7 +16,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class Main {
-	static boolean debug = true;
+	static boolean debug = false;
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
@@ -223,8 +223,8 @@ public class Main {
 			    		count++;
 			    		maxRatios += g.maxRatio;
 			    		System.out.println("Executing trade sequence");
-//			    		t.executeTradeSequenceWithList(sequence, m.baseAmountUSD);
-			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
+			    		t.executeTradeSequenceWithList(sequence, m.baseAmountUSD);
+//			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
 			    		double ratio = maxRatios/count;
 			    		System.out.println("Average ratio so far: " + ratio);
 			    		System.out.println("Number of trades executed so far: " + count);
@@ -235,6 +235,8 @@ public class Main {
 				    System.out.println("Testing currency Converter:");
 				    System.out.println("Converting 1 USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
 				    System.out.println("Converting 1 ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
+				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertUSDToCoin("BTC", 1));
+				    System.out.println("Converting 1 BTC to USD: " + CurrencyConverter.convertCoinToUSD("BTC", 1));
 			    }
 			    // Resetting parameters for new api query
 			    m.vertices.clear();
