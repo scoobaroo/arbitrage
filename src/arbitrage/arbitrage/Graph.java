@@ -9,7 +9,7 @@ public class Graph {
 	protected boolean debug;
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
-    protected ArrayList<Double> cycleWeightList;
+    protected ArrayList<Double> ratioList;
     protected ArrayList<Vertex> bestCycle;
     protected int cycleSize;
     protected double maxRatio;
@@ -21,7 +21,7 @@ public class Graph {
         this.debug = debug;
         this.vertices = vertices;
         this.edges = edges;
-        cycleWeightList = new ArrayList<Double>();
+        ratioList = new ArrayList<Double>();
         bestCycle = new ArrayList<Vertex>();
         dist = new HashMap<Vertex, Double>(vertices.size());
         if(debug) {
@@ -97,9 +97,9 @@ public class Graph {
 	        System.out.println("\n=================================================================================");
 	        System.out.println("\nThe number of negative cycles, or arbitrage opportunities detected were :"+totalCycles);
         }
-	        if(cycleWeightList.size()>0) maxRatio = Collections.max(cycleWeightList);
-	        System.out.println("Maximum Profit Ratio found: "+ maxRatio);
-	    		cycleSize = bestCycle.size();
+        if(ratioList.size()>0) maxRatio = Collections.max(ratioList);
+        System.out.println("Maximum Profit Ratio found: "+ maxRatio);
+    	cycleSize = bestCycle.size();
 	    if(debug==true) {
 	        System.out.println("Number of trades in sequence to execute:" + cycleSize);
 	        System.out.println(bestCycle);
@@ -115,44 +115,46 @@ public class Graph {
             cycleArrayList.add(v);
             v = v.predecessor;
         }
-        Double maxWeight = 0.0;
-        Double begin = 1.0;
-        Double cycleWeight = 0.0;
+        double begin = 1.0;
         for(int k=0; k<cycleArrayList.size(); k++){
             Vertex v1 = cycleArrayList.get(k);
             if(debug) System.out.print(v1.name+"--->");
             if(k<cycleArrayList.size()-1){
                 Vertex v2 = cycleArrayList.get(k+1);
                 Edge edge = findEdge(v1,v2);
-                cycleWeight += edge.weight;
-                begin *= Math.exp(edge.weight);
+                begin *= Math.exp(-edge.weight);
             }
         }
         Edge lastEdge = findEdge(cycleArrayList.get(cycleArrayList.size()-1),cycleArrayList.get(0));
         if(lastEdge!=null){
-            cycleWeight += lastEdge.weight;
-            if(cycleWeight> maxWeight){
-            		maxWeight = cycleWeight;
-            }
-            maxWeight = cycleWeight;
-            begin *= Math.exp(lastEdge.weight);
+            begin *= Math.exp(-lastEdge.weight);
             if(debug) {
 	            System.out.println();
-	            System.out.println("Math.exp(cycleWeight): " + Math.exp(cycleWeight));
 	            System.out.println("Starting with 1 " +v.name+ " we can end up with " + begin +" "+v.name +" by utilizing the negative cycle");
             }
-            cycleWeightList.add(begin);
-            Double maxRatio = Collections.max(cycleWeightList);
+            ratioList.add(begin);
+            Double maxRatio = Collections.max(ratioList);
             if(begin > maxRatio) {
             		maxRatio = begin;
             }
             if(begin == maxRatio) {
-            		bestCycle = cycleArrayList;
+        		bestCycle = cycleArrayList;
+//        		cycleArrayList.add(cycleArrayList.get(0));
+//                for(int j=0; j<cycleArrayList.size(); j++){
+//                    Vertex v1 = cycleArrayList.get(j);
+//                    if(debug) System.out.print(v1.name+"--->");
+//                    if(j<cycleArrayList.size()-1){
+//                        Vertex v2 = cycleArrayList.get(j+1);
+//                        Edge edge = findEdge(v1,v2);
+//                        cycleWeight += edge.weight;
+//                        begin *= Math.exp(edge.weight);
+//                        System.out.println(Math.exp(edge.weight)+" * ");
+//                    }
+//                }
             }
         } else {
             if (debug) System.out.println("\nCouldn't find final edge");
         } 
-        if (debug) System.out.println("Maximum negative weight cycle is:" + Math.exp(maxWeight));
     }
     
     public void printCycle(LinkedHashSet<Vertex> set){

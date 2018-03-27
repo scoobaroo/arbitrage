@@ -90,6 +90,7 @@ public class Trader {
 		System.out.println("Inside trader's executeTradeSequenceWithList");
 		System.out.println("Main.symbols:");
 		System.out.println(Main.symbols);
+		System.out.println("Main.symbols.size();" + Main.symbols.size());
 		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 		double amt = 0;
 		double startingAmt = 0;
@@ -97,7 +98,7 @@ public class Trader {
 		sequence.add(sequence.get(0));
 //		Collections.reverse(sequence);
 //		System.out.println("reversed sequence:");
-//		System.out.println(sequence);
+		System.out.println(sequence);
 	    for(int i = 0; i< sequence.size()-1 ; i++) {
 	    		String key1;
 	    		String key2;
@@ -124,8 +125,8 @@ public class Trader {
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
 					}
 		    		Trade trade = new Trade(startingAmt, symbol, orderType);
-		    		System.out.println();
 		    		marketOrderList.add(trade.createMarketOrder());
+		    		System.out.println();
 	    		} else {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
@@ -140,8 +141,8 @@ public class Trader {
 						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
 					}
 		    		Trade trade = new Trade(amt, symbol, orderType);
-		    		System.out.println();
 		    		marketOrderList.add(trade.createMarketOrder());
+		    		System.out.println();
 	    		}
 	    }
 //	    tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);

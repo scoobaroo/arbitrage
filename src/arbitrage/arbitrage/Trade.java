@@ -12,6 +12,9 @@ public class Trade {
 	protected String buyOrSell;
 	
 	public Trade(double amount, String pair, String buyOrSell) {
+		if(!Main.symbols.contains(pair)) {
+			System.out.println("Invalid symbol for Trade !!!");
+		}
 		this.amount = amount;
 		this.pair = pair;
 		this.buyOrSell = buyOrSell;
