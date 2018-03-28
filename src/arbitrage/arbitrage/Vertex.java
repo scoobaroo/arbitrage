@@ -5,7 +5,9 @@ public class Vertex {
 	protected CryptoCurrency cc;
 	protected String name;
 	protected Vertex predecessor=null;
-	
+	public Vertex(String name) {
+		this.name = name;
+	}
     public Vertex(CryptoCurrency cc, String name) {
         super();
         this.cc = cc;

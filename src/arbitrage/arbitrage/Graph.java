@@ -15,12 +15,18 @@ public class Graph {
     protected double maxRatio;
     protected HashMap<Vertex, Double> dist;
     protected double inf = Double.POSITIVE_INFINITY;
+    protected Vertex v0;
     
     public Graph(ArrayList<Vertex> vertices, ArrayList<Edge> edges, boolean debug) {
         super();
         this.debug = debug;
         this.vertices = vertices;
         this.edges = edges;
+        v0 = new Vertex("v0");
+        for (Vertex v : vertices) {
+        	Edge e = new Edge(v0,v,0);
+        	edges.add(e);
+        }
         ratioList = new ArrayList<Double>();
         bestCycle = new ArrayList<Vertex>();
         dist = new HashMap<Vertex, Double>(vertices.size());
@@ -158,13 +164,13 @@ public class Graph {
     }
     
     public void printCycle(LinkedHashSet<Vertex> set){
-    		if(debug == true) {
+		if(debug == true) {
 	        System.out.println("we are printing the contents of the LinkedHashSet<Vertex> cycle");
 	        // switch to for loop for readability.
 	        for(Vertex v : set) {
-	        		System.out.print(v.name + "--->");
+        		System.out.print(v.name + "--->");
 	        }
-    		}
+		}
     }
 
     public Edge findEdge(Vertex src, Vertex dest){
@@ -189,12 +195,12 @@ public class Graph {
     // A utility function used to print the solution
     public void printDistanceHashMap(HashMap<Vertex, Double> distance, ArrayList<Vertex> V){   
     		if(debug == true) {
-		    		System.out.println("\n**********************************************************************");
-		    		System.out.println("\n**********************************************************************");
+	    		System.out.println("\n**********************************************************************");
+	    		System.out.println("\n**********************************************************************");
 		        System.out.println("Vertex Distance from Source");
 		        for (int i=0; i<V.size(); ++i) {
-		        	System.out.println(V.get(i).name+"\t\t"+distance.get(V.get(i)));
+	        	System.out.println(V.get(i).name+"\t\t"+distance.get(V.get(i)));
 	        }
-    		}
+		}
     }
 }

@@ -13,7 +13,11 @@ public class Trade {
 	
 	public Trade(double amount, String pair, String buyOrSell) {
 		if(!Main.symbols.contains(pair)) {
-			System.out.println("Invalid symbol for Trade !!!");
+			System.out.println("Invalid symbol for Trade !!!!!!!!!!!!!!!!!!!!!!! WARNING");
+			System.out.println("Invalid symbol for Trade !!!!!!!!!!!!!!!!!!!!!!! WARNING");
+			System.out.println("Invalid symbol for Trade !!!!!!!!!!!!!!!!!!!!!!! WARNING");
+			System.out.println("Invalid symbol for Trade !!!!!!!!!!!!!!!!!!!!!!! WARNING");
+			System.out.println("Invalid symbol for Trade !!!!!!!!!!!!!!!!!!!!!!! WARNING");
 		}
 		this.amount = amount;
 		this.pair = pair;

@@ -16,7 +16,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class Main {
-	static boolean debug = false;
+	static boolean debug = true;
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
@@ -107,10 +107,14 @@ public class Main {
 			Vertex v1 = findVertex(key1);
 			Vertex v2 = findVertex(key2);
 			String pairReversed = key2 + key1;
-			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
-			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
-			exchangeRates.put(pair.toLowerCase(), bid);
-			exchangeRates.put(pairReversed.toLowerCase(), 1/ask);
+			edgeMap.put(pair, new Edge(v1,v2,-Math.log(ask)));
+			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(bid)));
+			exchangeRates.put(pair.toLowerCase(), ask);
+			exchangeRates.put(pairReversed.toLowerCase(), 1/bid);
+//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
+//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
+//			exchangeRates.put(pair.toLowerCase(), bid);
+//			exchangeRates.put(pairReversed.toLowerCase(), 1/ask);
 		}
 		for(Edge e: edgeMap.values()) {
     			setOfEdges.add(e);
@@ -214,7 +218,7 @@ public class Main {
 				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
 				// Just grabbing first vertex in vertices because we don't care about what source is.
-				Vertex src = g.vertices.get(1);
+				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
 			    double tradingFee = g.bestCycle.size() * 0.002;
@@ -243,6 +247,7 @@ public class Main {
 			    m.edges.clear();
 			    m.setOfEdges.clear();
 			    m.edgeMap.clear();
+			    Main.symbols.clear();
 				Thread.sleep(15000);
 			}
 		}

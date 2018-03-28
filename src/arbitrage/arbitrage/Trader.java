@@ -90,7 +90,7 @@ public class Trader {
 		System.out.println("Inside trader's executeTradeSequenceWithList");
 		System.out.println("Main.symbols:");
 		System.out.println(Main.symbols);
-		System.out.println("Main.symbols.size();" + Main.symbols.size());
+		System.out.println("Main.symbols.size():" + Main.symbols.size());
 		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 		double amt = 0;
 		double startingAmt = 0;
@@ -112,14 +112,22 @@ public class Trader {
 	    		if(i==0) {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
+						if(key1.toLowerCase().equals("usd")) {
+							startingAmt = amountUSD;
+						} else {
+							startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+						}
 						symbol = key2+key1;
-						startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
 					} else {
 						orderType = "sell";
-						startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+						if(key1.toLowerCase().equals("usd")) {
+							startingAmt = amountUSD;
+						} else {
+							startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
+						}
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
