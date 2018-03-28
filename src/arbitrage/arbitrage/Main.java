@@ -17,6 +17,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class Main {
 	static boolean debug = false;
+	static boolean trade = false;
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
@@ -109,15 +110,15 @@ public class Main {
 			Vertex v2 = findVertex(key2);
 			String pairReversed = key2 + key1;
 			////_TESTING MID////
-			edgeMap.put(pair, new Edge(v1,v2,-Math.log(mid)));
-			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(mid)));
-			exchangeRates.put(pair.toLowerCase(), mid);
-			exchangeRates.put(pairReversed.toLowerCase(), 1/mid);			
+//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(mid)));
+//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(mid)));
+//			exchangeRates.put(pair.toLowerCase(), mid);
+//			exchangeRates.put(pairReversed.toLowerCase(), 1/mid);			
 			//--BELOW IS GOOD CODE///
-//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(ask)));
-//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(bid)));
-//			exchangeRates.put(pair.toLowerCase(), ask);
-//			exchangeRates.put(pairReversed.toLowerCase(), 1/bid);
+			edgeMap.put(pair, new Edge(v1,v2,-Math.log(ask)));
+			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(bid)));
+			exchangeRates.put(pair.toLowerCase(), ask);
+			exchangeRates.put(pairReversed.toLowerCase(), 1/bid);
 			///--BELOW BREAKS THE CODE-----
 //			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
 //			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
@@ -216,13 +217,15 @@ public class Main {
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
+		    m.exchangeRates.clear();
+		    Main.symbols.clear();
 			int count = 0;
 			double maxRatios = 0;
 			while(true) {
 				m.getSymbols();
 				m.getExchangeRatesV2();
-				CurrencyConverter.setExchangeRates(m.exchangeRates);
 				t.setExchangeRates(m.exchangeRates);
+				CurrencyConverter.setExchangeRates(m.exchangeRates);
 				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
 				// Just grabbing first vertex in vertices because we don't care about what source is.
@@ -256,6 +259,7 @@ public class Main {
 			    m.setOfEdges.clear();
 			    m.edgeMap.clear();
 			    Main.symbols.clear();
+			    m.exchangeRates.clear();
 				Thread.sleep(15000);
 			}
 		}

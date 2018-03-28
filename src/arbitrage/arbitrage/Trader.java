@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bitfinex.v1.BitfinexOrderType;
@@ -80,9 +81,9 @@ public class Trader {
 				orderType = "sell";
 				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 			}
-	    		Trade trade = new Trade(amt, symbol, orderType);
-	    		MarketOrder mo = trade.createMarketOrder();
-//	    		tradeService.placeMarketOrder(mo);
+    		Trade trade = new Trade(amt, symbol, orderType);
+    		MarketOrder mo = trade.createMarketOrder();
+//	    	if(Main.trade) tradeService.placeMarketOrder(mo);
 	    }
 	}
 	
@@ -91,7 +92,7 @@ public class Trader {
 		System.out.println("Main.symbols:");
 		System.out.println(Main.symbols);
 		System.out.println("Main.symbols.size():" + Main.symbols.size());
-		ArrayList<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
+		List<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 		double amt = 0;
 		double startingAmt = 0;
 		double oldAmt = 0;
@@ -152,7 +153,7 @@ public class Trader {
 		    		System.out.println();
 	    		}
 	    }
-//	    tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);
+//	    if(Main.trade) tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);
 	}
 	
 	public void setExchangeRates(HashMap<String,Double> er) {
@@ -181,7 +182,7 @@ public class Trader {
 		}
 		System.out.println(convertCoinToBTCList.size());
 		System.out.println(convertCoinToBTCList);
-//		tradeService.placeBitfinexOrderMulti(convertCoinToBTCList, BitfinexOrderType.MARKET);
+//		if(Main.trade) tradeService.placeBitfinexOrderMulti(convertCoinToBTCList, BitfinexOrderType.MARKET);
 	}
 	
 	public void convertBTCToCoins(double amountBTC) throws IOException {
@@ -197,6 +198,6 @@ public class Trader {
 		}
 		System.out.println("Converting to " + convertBTCToCoinList.size() + " coins");
 		System.out.println(convertBTCToCoinList);
-//		tradeService.placeBitfinexOrderMulti(convertBTCToCoinList, BitfinexOrderType.MARKET);
+//		if(Main.trade) tradeService.placeBitfinexOrderMulti(convertBTCToCoinList, BitfinexOrderType.MARKET);
 	}
 }
