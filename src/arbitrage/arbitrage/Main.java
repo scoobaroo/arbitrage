@@ -16,7 +16,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class Main {
-	static boolean debug = true;
+	static boolean debug = false;
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;

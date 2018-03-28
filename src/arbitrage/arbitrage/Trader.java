@@ -121,6 +121,8 @@ public class Trader {
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+						Trade trade = new Trade(amt, symbol, orderType);
+			    		marketOrderList.add(trade.createMarketOrder());
 					} else {
 						orderType = "sell";
 						if(key1.toLowerCase().equals("usd")) {
@@ -131,9 +133,9 @@ public class Trader {
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+						Trade trade = new Trade(startingAmt, symbol, orderType);
+			    		marketOrderList.add(trade.createMarketOrder());
 					}
-		    		Trade trade = new Trade(startingAmt, symbol, orderType);
-		    		marketOrderList.add(trade.createMarketOrder());
 		    		System.out.println();
 	    		} else {
 		    		if(!Main.symbols.contains(symbol)) {
@@ -142,14 +144,16 @@ public class Trader {
 						oldAmt = amt;
 						amt = rate * oldAmt;
 						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
+						Trade trade = new Trade(amt, symbol, orderType);
+			    		marketOrderList.add(trade.createMarketOrder());
 					} else {
 						orderType = "sell";
 						oldAmt = amt;
 						amt = rate * oldAmt;
 						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
+						Trade trade = new Trade(oldAmt, symbol, orderType);
+			    		marketOrderList.add(trade.createMarketOrder());
 					}
-		    		Trade trade = new Trade(amt, symbol, orderType);
-		    		marketOrderList.add(trade.createMarketOrder());
 		    		System.out.println();
 	    		}
 	    }
