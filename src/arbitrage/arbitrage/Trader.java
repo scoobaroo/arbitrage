@@ -112,11 +112,6 @@ public class Trader {
 	    		if(i==0) {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
-						if(key1.toLowerCase().equals("usd")) {
-							startingAmt = amountUSD;
-						} else {
-							startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-						}
 						symbol = key2+key1;
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
