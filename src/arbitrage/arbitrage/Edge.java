@@ -5,11 +5,13 @@ public class Edge {
 	protected Vertex src;
     protected Vertex dest;
     protected double weight;
+    protected double rate;
     
-    public Edge(Vertex src, Vertex dest, double weight) {
-    		this.src = src;
+    public Edge(Vertex src, Vertex dest, double weight, double rate) {
+		this.src = src;
         this.dest = dest;
         this.weight = weight;
+        this.rate = rate;
     }
     
     @Override

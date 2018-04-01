@@ -104,24 +104,24 @@ public class Main {
 			String key2 = pair.substring(3,6);
 			double bid = Double.valueOf((String) array[1]);
 			double ask = Double.valueOf((String) array[3]);
-			double mid = bid+ask/2;
+			double mid = (bid+ask)/2;
 			if (debug) System.out.println("key1: " + key1 + " key2: " + key2 + " bid: " + bid +" ask: " +ask);
 			Vertex v1 = findVertex(key1);
 			Vertex v2 = findVertex(key2);
 			String pairReversed = key2 + key1;
 			////_TESTING MID////
-//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(mid)));
-//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(mid)));
-//			exchangeRates.put(pair.toLowerCase(), mid);
-//			exchangeRates.put(pairReversed.toLowerCase(), 1/mid);			
-			//--BELOW IS GOOD CODE///
-			edgeMap.put(pair, new Edge(v1,v2,-Math.log(ask)));
-			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(bid)));
-			exchangeRates.put(pair.toLowerCase(), ask);
-			exchangeRates.put(pairReversed.toLowerCase(), 1/bid);
-			///--BELOW BREAKS THE CODE-----
-//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid)));
-//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask)));
+			edgeMap.put(pair, new Edge(v1,v2,-Math.log(mid), mid));
+			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(mid), 1/mid));
+			exchangeRates.put(pair.toLowerCase(), mid);
+			exchangeRates.put(pairReversed.toLowerCase(), 1/mid);			
+//			--BELOW IS GOOD CODE hopefully///
+//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(ask), ask));
+//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(bid), 1/bid));
+//			exchangeRates.put(pair.toLowerCase(), ask);
+//			exchangeRates.put(pairReversed.toLowerCase(), 1/bid);
+			///--CODE BELOW MAKES SENSE-----
+//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid),bid));
+//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask),1/ask));
 //			exchangeRates.put(pair.toLowerCase(), bid);
 //			exchangeRates.put(pairReversed.toLowerCase(), 1/ask);
 		}
@@ -158,8 +158,8 @@ public class Main {
 				Vertex v1 = findVertex(symbol1);
 				Vertex v2 = findVertex(symbol2);
 				String pairReversed = symbol2 + symbol1;
-				edgeMap.put(pair, new Edge(v1,v2,-Math.log(rate)));
-				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(rate)));
+				edgeMap.put(pair, new Edge(v1,v2,-Math.log(rate), rate));
+				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(rate), rate));
 			}
 			Thread.sleep(200);
 		}
@@ -260,7 +260,7 @@ public class Main {
 			    m.edgeMap.clear();
 			    Main.symbols.clear();
 			    m.exchangeRates.clear();
-				Thread.sleep(15000);
+				Thread.sleep(16000);
 			}
 		}
 	}

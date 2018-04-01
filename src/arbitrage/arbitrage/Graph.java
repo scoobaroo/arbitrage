@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 
 public class Graph {
 	protected boolean debug;
@@ -24,7 +25,7 @@ public class Graph {
         this.edges = edges;
         v0 = new Vertex("v0");
         for (Vertex v : vertices) {
-        	Edge e = new Edge(v0,v,0);
+        	Edge e = new Edge(v0,v,0,0);
         	edges.add(e);
         }
         ratioList = new ArrayList<Double>();
@@ -121,6 +122,7 @@ public class Graph {
             cycleArrayList.add(v);
             v = v.predecessor;
         }
+        Collections.reverse(cycleArrayList);
         double begin = 1.0;
         for(int k=0; k<cycleArrayList.size(); k++){
             Vertex v1 = cycleArrayList.get(k);
@@ -128,12 +130,12 @@ public class Graph {
             if(k<cycleArrayList.size()-1){
                 Vertex v2 = cycleArrayList.get(k+1);
                 Edge edge = findEdge(v1,v2);
-                begin *= Math.exp(-edge.weight);
+                begin *= edge.rate;
             }
         }
         Edge lastEdge = findEdge(cycleArrayList.get(cycleArrayList.size()-1),cycleArrayList.get(0));
         if(lastEdge!=null){
-            begin *= Math.exp(-lastEdge.weight);
+            begin *= lastEdge.rate;
             if(debug) {
 	            System.out.println();
 	            System.out.println("Starting with 1 " +v.name+ " we can end up with " + begin +" "+v.name +" by utilizing the negative cycle");

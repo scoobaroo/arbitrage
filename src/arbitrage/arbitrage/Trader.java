@@ -59,24 +59,26 @@ public class Trader {
 		System.out.println("Inside trader's executeTradeSequenceSequentially");
 		double amt = 0;
 	    for(int i = 0; i< sequence.size(); i++) {
-	    		String key1;
-	    		String key2;
-	    		String symbol;
-	    		String orderType;
-	    		if(i==sequence.size()-1) {
-	    			//linking up last and first
-	    			key1 = sequence.get(sequence.size()-1).toString().toLowerCase(); 
-	    			key2 = sequence.get(0).toString().toLowerCase();;
-	    			symbol = key1+key2;
-	    		} else {
-	    			key1 = sequence.get(i).toString().toLowerCase();
-		    		key2 = sequence.get(i+1).toString().toLowerCase();
-		    		symbol = key1+key2;
-	    		}
-		    	if(!Main.symbols.contains(symbol)) {
-		    		orderType = "buy";
+    		String key1;
+    		String key2;
+    		String symbol;
+    		String orderType;
+    		if(i==sequence.size()-1) {
+    			//linking up last and first
+    			key1 = sequence.get(sequence.size()-1).toString().toLowerCase(); 
+    			key2 = sequence.get(0).toString().toLowerCase();;
+    			symbol = key1+key2;
+    		} else {
+    			// linking up vertices one after the other
+    			key1 = sequence.get(i).toString().toLowerCase();
+	    		key2 = sequence.get(i+1).toString().toLowerCase();
+	    		symbol = key1+key2;
+    		}
+	    	if(!Main.symbols.contains(symbol)) {
+	    		// if symbols don't contain the symbol then we reverse the order
+	    		orderType = "buy";
 				symbol = key2+key1;
-				amt = CurrencyConverter.convertUSDToCoin(key2, amountUSD);
+				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 			} else {
 				orderType = "sell";
 				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
@@ -114,6 +116,7 @@ public class Trader {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						symbol = key2+key1;
+						startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
@@ -121,11 +124,7 @@ public class Trader {
 			    		marketOrderList.add(trade.createMarketOrder());
 					} else {
 						orderType = "sell";
-						if(key1.toLowerCase().equals("usd")) {
-							startingAmt = amountUSD;
-						} else {
-							startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-						}
+						startingAmt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
 						System.out.println(amountUSD + " USD = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
