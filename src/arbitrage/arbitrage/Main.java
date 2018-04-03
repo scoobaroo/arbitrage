@@ -110,20 +110,20 @@ public class Main {
 			Vertex v2 = findVertex(key2);
 			String pairReversed = key2 + key1;
 			////_TESTING MID////
-			edgeMap.put(pair, new Edge(v1,v2,-Math.log(mid), mid));
-			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(mid), 1/mid));
-			exchangeRates.put(pair.toLowerCase(), mid);
-			exchangeRates.put(pairReversed.toLowerCase(), 1/mid);			
+//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(mid), mid));
+//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(mid), 1/mid));
+//			exchangeRates.put(pair.toLowerCase(), mid);
+//			exchangeRates.put(pairReversed.toLowerCase(), 1/mid);			
 //			--BELOW IS GOOD CODE hopefully///
 //			edgeMap.put(pair, new Edge(v1,v2,-Math.log(ask), ask));
 //			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(bid), 1/bid));
 //			exchangeRates.put(pair.toLowerCase(), ask);
 //			exchangeRates.put(pairReversed.toLowerCase(), 1/bid);
 			///--CODE BELOW MAKES SENSE-----
-//			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid),bid));
-//			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask),1/ask));
-//			exchangeRates.put(pair.toLowerCase(), bid);
-//			exchangeRates.put(pairReversed.toLowerCase(), 1/ask);
+			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid),bid));
+			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask),1/ask));
+			exchangeRates.put(pair.toLowerCase(), bid);
+			exchangeRates.put(pairReversed.toLowerCase(), 1/ask);
 		}
 		for(Edge e: edgeMap.values()) {
     			setOfEdges.add(e);

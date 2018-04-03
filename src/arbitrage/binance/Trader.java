@@ -1,4 +1,4 @@
-package arbitrage;
+package binance;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeSpecification;
+import org.knowm.xchange.binance.BinanceExchange;
 import org.knowm.xchange.bitfinex.v1.BitfinexOrderType;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.AccountInfo;
@@ -41,12 +43,12 @@ public class Trader {
 //				}
 //			}
 //		}
-//		ExchangeSpecification exSpec = new BitfinexExchange().getDefaultExchangeSpecification();
+		ExchangeSpecification exSpec = new BinanceExchange().getDefaultExchangeSpecification();
 //		exSpec.setUserName("");
 //		exSpec.setApiKey("");
 //		exSpec.setSecretKey("");
-//		Exchange bitfinex = ExchangeFactory.INSTANCE.createExchange(exSpec);
-//		tradeService = bitfinex.getTradeService();
+//		Exchange binance = ExchangeFactory.INSTANCE.createExchange(exSpec);
+//		tradeService = binance.getTradeService();
 	}
 	
 	public AccountInfo getAccountInfo() throws IOException {
@@ -55,40 +57,7 @@ public class Trader {
 		System.out.println(accountInfo.toString());
 		return accountInfo;
 	}
-	public void executeTradeSequenceSequentially(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
-		System.out.println("Inside trader's executeTradeSequenceSequentially");
-		double amt = 0;
-	    for(int i = 0; i< sequence.size(); i++) {
-    		String key1;
-    		String key2;
-    		String symbol;
-    		String orderType;
-    		if(i==sequence.size()-1) {
-    			//linking up last and first
-    			key1 = sequence.get(sequence.size()-1).toString().toLowerCase(); 
-    			key2 = sequence.get(0).toString().toLowerCase();;
-    			symbol = key1+key2;
-    		} else {
-    			// linking up vertices one after the other
-    			key1 = sequence.get(i).toString().toLowerCase();
-	    		key2 = sequence.get(i+1).toString().toLowerCase();
-	    		symbol = key1+key2;
-    		}
-	    	if(!Main.symbols.contains(symbol)) {
-	    		// if symbols don't contain the symbol then we reverse the order
-	    		orderType = "buy";
-				symbol = key2+key1;
-				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-			} else {
-				orderType = "sell";
-				amt = CurrencyConverter.convertUSDToCoin(key1, amountUSD);
-			}
-    		Trade trade = new Trade(amt, symbol, orderType);
-    		MarketOrder mo = trade.createMarketOrder();
-//	    	if(Main.trade) tradeService.placeMarketOrder(mo);
-	    }
-	}
-	
+
 	public void executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountUSD) throws IOException {
 		System.out.println("Inside trader's executeTradeSequenceWithList");
 		System.out.println("Main.symbols:");
@@ -107,8 +76,8 @@ public class Trader {
 	    		String key2;
 	    		String symbol;
 	    		String orderType;
-    			key1 = sequence.get(i).toString().toLowerCase();
-	    		key2 = sequence.get(i+1).toString().toLowerCase();
+    			key1 = sequence.get(i).toString().toUpperCase();
+	    		key2 = sequence.get(i+1).toString().toUpperCase();
 	    		symbol = key1+key2;
 				double rate = exchangeRates.get(symbol);
 				System.out.println("We got " + rate + " for " +symbol);
@@ -157,7 +126,7 @@ public class Trader {
 	
 	public void setExchangeRates(HashMap<String,Double> er) {
 		exchangeRates = er;
-		if(Main.debug) System.out.println(exchangeRates);
+//		System.out.println(exchangeRates);
 	}
 	
 	public void setVertices(ArrayList<Vertex> v) {
@@ -171,7 +140,7 @@ public class Trader {
 		ArrayList<MarketOrder> convertCoinToBTCList = new ArrayList<MarketOrder>();
 		for (Vertex v : vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
-				String pair = "btc"+v.name;
+				String pair = "BTC"+v.name;
 				// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
 				// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
 				Trade trade = new Trade(CurrencyConverter.convertCoinToBTC(v.name, wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()), pair, "buy");
