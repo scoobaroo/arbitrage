@@ -8,6 +8,7 @@ import java.util.*;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.binance.BinanceExchange;
 import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -25,15 +26,17 @@ public class Main {
 	protected static ArrayList<String> symbols;
 	protected HashSet<Edge> setOfEdges;
 	protected LinkedHashMap<String,Double> exchangeRates;
+	protected LinkedHashMap<String,Double> transactionAmounts;
 	protected Map<String, Edge> edgeMap;
 	protected HashMap<String, Vertex> vertexMap;
 	protected HashSet<Vertex> setOfVertices;
 	protected boolean firstTime;
-	protected double baseAmountUSD;
+	protected double baseAmountBTC;
 	protected Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	protected org.json.JSONArray tickerArray;
 	
 	private Main() {
+		transactionAmounts = new LinkedHashMap<String,Double>();
 		exchangeRates = new LinkedHashMap<String,Double>();
 		symbols = new ArrayList<String>();
 		vertices = new ArrayList<Vertex>();
@@ -134,6 +137,8 @@ public class Main {
 			}
 			double bid = Double.valueOf((String) obj.get("bidPrice"));
 			double ask = Double.valueOf((String) obj.get("askPrice"));
+			double bidSize = Double.valueOf((String) obj.get("bidQty"));
+			double askSize = Double.valueOf((String) obj.get("askQty"));
 			if(!setOfVertices.contains(new Vertex(key1))) {
 				Vertex vertex1 = new Vertex(key1);
 				setOfVertices.add(vertex1);
@@ -148,7 +153,9 @@ public class Main {
 			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid), bid));
 			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
 			exchangeRates.put(pair.toUpperCase(), bid);
-			exchangeRates.put(pairReversed.toUpperCase(), 1/ask);			
+			exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
+			transactionAmounts.put(pair, bidSize);
+			transactionAmounts.put(pairReversed, askSize);
 		}
 		for(Edge e: edgeMap.values()) {
     			setOfEdges.add(e);
@@ -172,8 +179,8 @@ public class Main {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
 		Main m = new Main();
-		Exchange bitfinexExchange = new BitfinexExchange();
-		Trader t = new Trader(bitfinexExchange);
+		Exchange binanceExchange = new BinanceExchange();
+		Trader t = new Trader(binanceExchange);
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		//uncomment below lines to have dialogs
 //		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
@@ -194,9 +201,9 @@ public class Main {
 //				double amountBTCToConvert = Double.valueOf(reader.next());
 //				t.convertBTCToCoins(amountBTCToConvert);
 //			}
-			System.out.println("Enter base amount(USD) to execute in trade sequences: ");	
-			String baseAmountUSDString = reader.next();
-			m.baseAmountUSD = Double.valueOf(baseAmountUSDString);
+			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
+			String baseAmountBTCString = reader.next();
+			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
 //			System.out.println(m.baseAmountUSD);
 //	//		t.getAccountInfo();
 //			reader.close();
@@ -213,6 +220,7 @@ public class Main {
 			while(true) {
 				m.getExchangeRates();
 				t.setExchangeRates(m.exchangeRates);
+				t.setTransactionAmounts(m.transactionAmounts);
 				CurrencyConverter.setExchangeRates(m.exchangeRates);
 				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
@@ -220,13 +228,13 @@ public class Main {
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = g.bestCycle.size() * 0.001;
+			    double tradingFee = g.bestCycle.size() * 0.0005;
 			    System.out.println(sequence);
 			    if(1+tradingFee<g.maxRatio) {
 			    		count++;
 			    		maxRatios += g.maxRatio;
 			    		System.out.println("Executing trade sequence");
-			    		t.executeTradeSequenceWithList(sequence, m.baseAmountUSD);
+			    		t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
 //			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
 			    		double ratio = maxRatios/count;
 			    		System.out.println("Average ratio so far: " + ratio);
@@ -248,7 +256,8 @@ public class Main {
 			    m.edgeMap.clear();
 			    Main.symbols.clear();
 			    m.exchangeRates.clear();
-				Thread.sleep(10);
+			    System.out.println("Number of trades executed so far: " + count);
+				Thread.sleep((long) 0.000001);
 			}
 		}
 	}

@@ -31,8 +31,6 @@ public class Graph {
         ratioList = new ArrayList<Double>();
         bestCycle = new ArrayList<Vertex>();
         dist = new HashMap<Vertex, Double>(vertices.size());
-        System.out.println("Graph vertices");
-        System.out.println(vertices.size());
         if(debug) {
 	        System.out.println("Vertices size: " + vertices.size());
 	        System.out.println("Graph edges");

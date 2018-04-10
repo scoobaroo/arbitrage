@@ -1,6 +1,7 @@
 package binance;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.HashMap;
 
 public class CurrencyConverter {
@@ -34,20 +35,22 @@ public class CurrencyConverter {
     }
     
     public static double convertBTCToCoin(String currency, double amountBTC) {
+    	System.out.println(exchangeRates);
     	if(currency.toUpperCase().equals("BTC")){
     		return amountBTC;
     	}
-		String symbol = "BTC"+currency.toLowerCase(); 
+		String symbol = "BTC"+currency.toUpperCase(); 
 		double rate = exchangeRates.get(symbol);
 		double amount = rate * amountBTC;
 		return amount;
     }
     
     public static double convertCoinToBTC(String currency, double amountCurrency) {
+    	System.out.println(exchangeRates);
     	if(currency.toUpperCase().equals("BTC")){
     		return amountCurrency;
     	}
-		String symbol = currency.toLowerCase() + "BTC"; 
+		String symbol = currency.toUpperCase() + "BTC"; 
 		double rate = exchangeRates.get(symbol);
 		double amount = rate * amountCurrency;
 		return amount;
@@ -62,5 +65,12 @@ public class CurrencyConverter {
 		double rate = exchangeRates.get(symbol);
 		double amount = rate * amountCoin;
 		return amount;
+    }
+    
+    public static double round(double d, int sigDigits) {
+	    BigDecimal bd = new BigDecimal(d);
+	    bd = bd.round(new MathContext(sigDigits));
+	    double rounded = bd.doubleValue();
+	    return rounded;
     }
 }
