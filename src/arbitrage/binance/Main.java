@@ -1,5 +1,8 @@
 package binance;
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -21,6 +24,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = false;
+	protected static LinkedHashMap<String,Integer> sigDigs;	
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
@@ -36,6 +40,7 @@ public class Main {
 	protected org.json.JSONArray tickerArray;
 	
 	private Main() {
+		sigDigs = new LinkedHashMap<String,Integer> ();
 		transactionAmounts = new LinkedHashMap<String,Double>();
 		exchangeRates = new LinkedHashMap<String,Double>();
 		symbols = new ArrayList<String>();
@@ -47,6 +52,31 @@ public class Main {
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
 		tickerArray = new org.json.JSONArray();
+		sigDigs = new LinkedHashMap<String,Integer>();
+        String csvFile = "BinanceTradingRule-Master.csv";
+        BufferedReader br = null;
+        String line = "";
+        try {
+            br = new BufferedReader(new FileReader(csvFile));
+            while ((line = br.readLine()) != null) {
+                String[] elements = line.split(",");
+                String symbol = elements[0].replace("/","");
+                sigDigs.put(symbol, Integer.valueOf(elements[1]));
+            }
+            System.out.println(sigDigs);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 	}
 	
 //	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
@@ -204,7 +234,7 @@ public class Main {
 			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
 			String baseAmountBTCString = reader.next();
 			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
-//			System.out.println(m.baseAmountUSD);
+//			System.out.println(m.baseAcmountBTC);
 //	//		t.getAccountInfo();
 //			reader.close();
 //		    
@@ -217,6 +247,7 @@ public class Main {
 			//comment back to here for dialogs
 			int count = 0;
 			double maxRatios = 0;
+			double profits = 0;
 			while(true) {
 				m.getExchangeRates();
 				t.setExchangeRates(m.exchangeRates);
@@ -236,9 +267,14 @@ public class Main {
 			    		System.out.println("Executing trade sequence");
 			    		t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
 //			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
-			    		double ratio = maxRatios/count;
-			    		System.out.println("Average ratio so far: " + ratio);
+			    		double ratioAvg = maxRatios/count;
+			    		System.out.println("Average ratio so far: " + ratioAvg);
 			    		System.out.println("Number of trades executed so far: " + count);
+			    		double profit = (g.maxRatio-(1+tradingFee));
+			    		System.out.println("Profit made from this sequence: "+ profit);
+			    		profits += profit;
+			    		double profitAvg = profits/count;
+			    		System.out.println("Average profit so far: " + profitAvg);
 			    }
 			    if(debug) {
 				    System.out.println(m.exchangeRates);

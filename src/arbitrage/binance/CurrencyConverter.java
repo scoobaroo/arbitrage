@@ -67,10 +67,10 @@ public class CurrencyConverter {
 		return amount;
     }
     
-    public static double round(double d, int sigDigits) {
-	    BigDecimal bd = new BigDecimal(d);
-	    bd = bd.round(new MathContext(sigDigits));
-	    double rounded = bd.doubleValue();
-	    return rounded;
+    public static BigDecimal toPrecision(double number, int precision) {
+    	if(precision==0) {
+    		return new BigDecimal(Math.ceil(number));
+    	}
+        return new BigDecimal(number, new MathContext(precision+1));
     }
 }

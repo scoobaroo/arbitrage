@@ -29,15 +29,16 @@ public class Trade {
 	
 	public MarketOrder createMarketOrder(){
 		CurrencyPair pair = new CurrencyPair(key1, key2);
+		String symbol = key1+key2;
 		if(buyOrSell.toUpperCase().equals("BUY")) {
 			System.out.println("creating a BUY order");
-		    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(BigDecimal.valueOf(amount)).build();
+		    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol))).build();
 //		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
 		    System.out.println(marketOrder);
 		    return marketOrder;	    
 		} else {
 			System.out.println("creating a SELL order");
-			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(BigDecimal.valueOf(amount)).build();
+			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol))).build();
 //		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
 			System.out.println(marketOrder);
 		    return marketOrder;
