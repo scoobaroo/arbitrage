@@ -1,64 +1,79 @@
 package binance;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.binance.BinanceExchange;
-import org.knowm.xchange.bitfinex.v1.BitfinexOrderType;
 import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.account.AccountInfo;
+import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.service.account.AccountService;
 import org.knowm.xchange.service.trade.TradeService;
 
 public class Trader {
+	protected AccountInfo info;
+	protected AccountService service;
 	protected Exchange exchange;
 	protected TradeService tradeService;
 	protected HashMap<String,Double> exchangeRates;
 	protected HashMap<String,Double> transactionAmounts;
 	protected ArrayList<Vertex> vertices;
 	
-	public Trader(Exchange ex) {
-		this.exchange = ex;
-//		Properties prop = new Properties();
-//		InputStream input = null;
-//		try {
-//			input = new FileInputStream("/Users/suejanehan/workspace/config.properties");
-//			prop.load(input);
+	public Trader(Exchange exchange) throws IOException {
+		this.exchange = exchange;
+		Properties prop = new Properties();
+		InputStream input = null;
+		String apiKey = "", apiSecret = "";
+		try {
+			input = new FileInputStream("/Users/suejanehan/workspace/config.properties");
+			prop.load(input);
 //			System.out.println(prop.getProperty("apiKey"));
 //			System.out.println(prop.getProperty("apiSecret"));
-//		} catch (IOException ex) {
-//			ex.printStackTrace();
-//		} finally {
-//			if (input != null) {
-//				try {
-//					input.close();
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-//			}
-//		}
+			apiKey = prop.getProperty("apiKey");
+			apiSecret = prop.getProperty("apiSecret");
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 		ExchangeSpecification exSpec = new BinanceExchange().getDefaultExchangeSpecification();
-//		exSpec.setUserName("");
-//		exSpec.setApiKey("");
-//		exSpec.setSecretKey("");
-//		Exchange binance = ExchangeFactory.INSTANCE.createExchange(exSpec);
-//		tradeService = binance.getTradeService();
+		exSpec.setUserName("mild.7.eric@gmail.com");
+		exSpec.setApiKey(apiKey);
+		exSpec.setSecretKey(apiSecret);
+		Exchange binance = ExchangeFactory.INSTANCE.createExchange(exSpec);
+		tradeService = binance.getTradeService();
+		service = binance.getAccountService();
+		info = service.getAccountInfo();
+		getBnbBalance();
 	}
 	
-	public AccountInfo getAccountInfo() throws IOException {
-		AccountService accountService = exchange.getAccountService();
-		AccountInfo accountInfo = accountService.getAccountInfo();
-		System.out.println(accountInfo.toString());
-		return accountInfo;
+	public BigDecimal getBnbBalance() {
+		Wallet wallet = info.getWallet();
+		Balance bnbBalanceAll = wallet.getBalance(new Currency("bnb"));
+		BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
+		System.out.println(bnbBalanceAvailable);
+		return bnbBalanceAvailable;
 	}
-
+	
 	public void executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC) throws IOException {
 		System.out.println("Inside trader's executeTradeSequenceWithList");
 		System.out.println("Main.symbols:");
@@ -122,7 +137,11 @@ public class Trader {
 		    		System.out.println();
 	    		}
 	    }
-//	    if(Main.trade) tradeService.placeBitfinexOrderMulti(marketOrderList, BitfinexOrderType.MARKET);
+	    if(Main.trade) {
+	    	for(MarketOrder order: marketOrderList) {
+	    		tradeService.placeMarketOrder(order);
+	    	}
+	    };
 	}
 	
 	public void setExchangeRates(HashMap<String,Double> er) {
@@ -140,8 +159,7 @@ public class Trader {
 	}
 	
 	public void convertCoinsToBTC() throws IOException {
-		AccountInfo accountInfo = getAccountInfo();
-		Wallet wallet = accountInfo.getWallet();
+		Wallet wallet = info.getWallet();
 		System.out.println(wallet.toString());
 		ArrayList<MarketOrder> convertCoinToBTCList = new ArrayList<MarketOrder>();
 		for (Vertex v : vertices) {
@@ -157,23 +175,31 @@ public class Trader {
 		}
 		System.out.println(convertCoinToBTCList.size());
 		System.out.println(convertCoinToBTCList);
-//		if(Main.trade) tradeService.placeBitfinexOrderMulti(convertCoinToBTCList, BitfinexOrderType.MARKET);
+	    if(Main.trade) {
+	    	for(MarketOrder order: convertCoinToBTCList) {
+	    		tradeService.placeMarketOrder(order);
+	    	}
+	    };
 	}
 	
 	public void convertBTCToCoins(double amountBTC) throws IOException {
 		System.out.println("Converting " + amountBTC + " BTC to all availabe cryptocurrencies");
 		double btcPerCoin = amountBTC/(vertices.size()-1);
-		ArrayList<MarketOrder> convertBTCToCoinList = new ArrayList<MarketOrder>();
+		ArrayList<MarketOrder> convertBTCToCoinsList = new ArrayList<MarketOrder>();
 		for (Vertex v : vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
 				String key1 = "BTC";
 				String key2 = v.name;
 				Trade trade = new Trade(btcPerCoin, key1, key2, "sell");
-				convertBTCToCoinList.add(trade.createMarketOrder());
+				convertBTCToCoinsList.add(trade.createMarketOrder());
 			}
 		}
-		System.out.println("Converting to " + convertBTCToCoinList.size() + " coins");
-		System.out.println(convertBTCToCoinList);
-//		if(Main.trade) tradeService.placeBitfinexOrderMulti(convertBTCToCoinList, BitfinexOrderType.MARKET);
+		System.out.println("Converting to " + convertBTCToCoinsList.size() + " coins");
+		System.out.println(convertBTCToCoinsList);
+	    if(Main.trade) {
+	    	for(MarketOrder order: convertBTCToCoinsList) {
+	    		tradeService.placeMarketOrder(order);
+	    	}
+	    };
 	}
 }
