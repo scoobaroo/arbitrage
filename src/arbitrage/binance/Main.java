@@ -97,40 +97,42 @@ public class Main {
 			String key1= "", key2 = "";
 			org.json.JSONObject obj = (org.json.JSONObject) o;
 			String pair = (String) obj.get("symbol");
-			if (pair.length() == 5) {
-				key1 = pair.substring(0,2);
-				key2 = pair.substring(2,5);
-			} else if(pair.length() == 6) {
-				key1 = pair.substring(0,3);
-				key2 = pair.substring(3,6);
-			} else if (pair.length() == 7) {
-				if(pair.substring(3,7).equals("USDT")) {
+			if(!pair.equals("123456")) {
+				if (pair.length() == 5) {
+					key1 = pair.substring(0,2);
+					key2 = pair.substring(2,5);
+				} else if(pair.length() == 6) {
 					key1 = pair.substring(0,3);
-					key2 = pair.substring(3,7);
-				} else {
-					key1 = pair.substring(0,4);
-					key2 = pair.substring(4,7);
+					key2 = pair.substring(3,6);
+				} else if (pair.length() == 7) {
+					if(pair.substring(3,7).equals("USDT")) {
+						key1 = pair.substring(0,3);
+						key2 = pair.substring(3,7);
+					} else {
+						key1 = pair.substring(0,4);
+						key2 = pair.substring(4,7);
+					}
+				} else if (pair.length() == 8) {
+					if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH") || pair.substring(5,8).equals("BNB")){
+						key1 = pair.substring(0,5);
+						key2 = pair.substring(5,8);
+					} else {
+						key1 = pair.substring(0,4);
+						key2 = pair.substring(4,8);
+					}
 				}
-			} else if (pair.length() == 8) {
-				if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH")){
-					key1 = pair.substring(0,5);
-					key2 = pair.substring(5,8);
-				} else {
-					key1 = pair.substring(0,4);
-					key2 = pair.substring(4,8);
-				}
+				Vertex v1 = new Vertex(key1.toUpperCase());
+				Vertex v2 = new Vertex(key2.toUpperCase());
+				vertexSet.add(v1);
+				vertexSet.add(v2);
+				if(debug) System.out.println("vertexSet size: " + vertexSet.size());
+				vertices = new ArrayList<Vertex>(vertexSet);
 			}
-			Vertex v1 = new Vertex(key1.toUpperCase());
-			Vertex v2 = new Vertex(key2.toUpperCase());
-			vertexSet.add(v1);
-			vertexSet.add(v2);
-			if(debug) System.out.println("vertexSet size: " + vertexSet.size());
-			vertices = new ArrayList<Vertex>(vertexSet);
 		}
 	}
 	
 	public void getExchangeRates() throws UnirestException, InterruptedException {
-		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.binance.com//api/v3/ticker/bookTicker").asJson();
+		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.binance.com/api/v3/ticker/bookTicker").asJson();
 		org.json.JSONArray list = jsonResponse.getBody().getArray();
 		if(debug==true) {
 			System.out.println(list);
@@ -142,50 +144,45 @@ public class Main {
 			org.json.JSONObject obj = (org.json.JSONObject) o;
 			String pair = (String) obj.get("symbol");
 			symbols.add(pair);
-			if (pair.length() == 5) {
-				key1 = pair.substring(0,2);
-				key2 = pair.substring(2,5);
-			} else if(pair.length() == 6) {
-				key1 = pair.substring(0,3);
-				key2 = pair.substring(3,6);
-			} else if (pair.length() == 7) {
-				if(pair.substring(3,7).equals("USDT")) {
+			if (!pair.equals("123456")) {
+				if (pair.length() == 5) {
+					key1 = pair.substring(0,2);
+					key2 = pair.substring(2,5);
+				} else if(pair.length() == 6) {
 					key1 = pair.substring(0,3);
-					key2 = pair.substring(3,7);
-				} else {
-					key1 = pair.substring(0,4);
-					key2 = pair.substring(4,7);
+					key2 = pair.substring(3,6);
+				} else if (pair.length() == 7) {
+					if(pair.substring(3,7).equals("USDT")) {
+						key1 = pair.substring(0,3);
+						key2 = pair.substring(3,7);
+					} else {
+						key1 = pair.substring(0,4);
+						key2 = pair.substring(4,7);
+					}
+				} else if (pair.length() == 8) {
+					if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH") || pair.substring(5,8).equals("BNB")){
+						key1 = pair.substring(0,5);
+						key2 = pair.substring(5,8);
+					} else {
+						key1 = pair.substring(0,4);
+						key2 = pair.substring(4,8);
+					}
 				}
-			} else if (pair.length() == 8) {
-				if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH")){
-					key1 = pair.substring(0,5);
-					key2 = pair.substring(5,8);
-				} else {
-					key1 = pair.substring(0,4);
-					key2 = pair.substring(4,8);
-				}
+				Vertex v1 = findVertex(key1);
+				Vertex v2 = findVertex(key2);
+				String pairReversed = key2 + key1;
+				if(debug) System.out.println("key1: "+key1 +" key2: "+key2);
+				double bid = Double.valueOf((String) obj.get("bidPrice"));
+				double ask = Double.valueOf((String) obj.get("askPrice"));
+				double bidSize = Double.valueOf((String) obj.get("bidQty"));
+				double askSize = Double.valueOf((String) obj.get("askQty"));
+				edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid), bid));
+				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
+				exchangeRates.put(pair.toUpperCase(), bid);
+				exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
+				transactionAmounts.put(pair, bidSize);
+				transactionAmounts.put(pairReversed, askSize);
 			}
-			double bid = Double.valueOf((String) obj.get("bidPrice"));
-			double ask = Double.valueOf((String) obj.get("askPrice"));
-			double bidSize = Double.valueOf((String) obj.get("bidQty"));
-			double askSize = Double.valueOf((String) obj.get("askQty"));
-			if(!setOfVertices.contains(new Vertex(key1))) {
-				Vertex vertex1 = new Vertex(key1);
-				setOfVertices.add(vertex1);
-			}
-			if(!setOfVertices.contains(new Vertex(key1))) {
-				Vertex vertex2 = new Vertex(key2);
-				setOfVertices.add(vertex2);
-			}
-			Vertex v1 = findVertex(key1);
-			Vertex v2 = findVertex(key2);
-			String pairReversed = key2 + key1;
-			edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid), bid));
-			edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
-			exchangeRates.put(pair.toUpperCase(), bid);
-			exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
-			transactionAmounts.put(pair, bidSize);
-			transactionAmounts.put(pairReversed, askSize);
 		}
 		for(Edge e: edgeMap.values()) {
     			setOfEdges.add(e);
@@ -213,43 +210,50 @@ public class Main {
 		Trader t = new Trader(binanceExchange);
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		//uncomment below lines to have dialogs
-//		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
-//		int choice = Integer.valueOf(reader.next());
-//		if(choice==999) {
-//			t.convertCoinsToBTC();
-//			return;
-//		} else {
-//			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
-//			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
-//			if(choiceToConvertBTCToCoins==888) {
-//				m.getExchangeRates();
-//				CurrencyConverter.setExchangeRates(m.exchangeRates);
-//				t.setExchangeRates(m.exchangeRates);
-//				t.setVertices(m.vertices);
-//				System.out.println(t.vertices);
-//				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies: ");
-//				double amountBTCToConvert = Double.valueOf(reader.next());
-//				t.convertBTCToCoins(amountBTCToConvert);
-//			}
+		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
+		int choice = Integer.valueOf(reader.next());
+		if(choice==999) {
+			m.getExchangeRates();
+			Graph g = new Graph(m.vertices, m.edges, Main.debug);
+			Vertex src = g.v0;
+			g.BellmanFord(g, src);
+			CurrencyConverter.setExchangeRates(m.exchangeRates);
+			t.setExchangeRates(m.exchangeRates);
+			t.setVertices(m.vertices);
+			System.out.println("Enter percentage (0.xxx) of each currency you would like to sell:");
+			double ratio = Double.valueOf(reader.next());
+			t.convertCoinsToBTC(ratio);
+			return;
+		} else {
+			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
+			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
+			if(choiceToConvertBTCToCoins==888) {
+				m.getExchangeRates();
+				CurrencyConverter.setExchangeRates(m.exchangeRates);
+				t.setExchangeRates(m.exchangeRates);
+				t.setVertices(m.vertices);
+				System.out.println(t.vertices);
+				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies:");
+				double amountBTCToConvert = Double.valueOf(reader.next());
+				t.convertBTCToCoins(amountBTCToConvert);
+			}
 			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
 			String baseAmountBTCString = reader.next();
 			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
-//			System.out.println(m.baseAcmountBTC);
-//	//		t.getAccountInfo();
-//			reader.close();
-//		    
-//			m.vertices.clear();
-//		    m.edges.clear();
-//		    m.setOfEdges.clear();
-//		    m.edgeMap.clear();
-//		    m.exchangeRates.clear();
-//		    Main.symbols.clear();
+			reader.close();		    
+			m.vertices.clear();
+		    m.edges.clear();
+		    m.setOfEdges.clear();
+		    m.edgeMap.clear();
+		    m.exchangeRates.clear();
+		    Main.symbols.clear();
 			//comment back to here for dialogs
 			int count = 0;
 			double maxRatios = 0;
 			double profits = 0;
 			while(true) {
 				m.getExchangeRates();
+				System.out.println(m.exchangeRates);
 				t.setExchangeRates(m.exchangeRates);
 				t.setTransactionAmounts(m.transactionAmounts);
 				CurrencyConverter.setExchangeRates(m.exchangeRates);
@@ -280,10 +284,9 @@ public class Main {
 				    System.out.println(m.exchangeRates);
 				    System.out.println("Size of exchange rates:" + m.exchangeRates.size());
 				    System.out.println("Testing currency Converter:");
-				    System.out.println("Converting 1 USD to ETH: " + CurrencyConverter.convertUSDToCoin("ETH", 1));
-				    System.out.println("Converting 1 ETH to USD: " + CurrencyConverter.convertCoinToUSD("ETH", 1));
-				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertUSDToCoin("BTC", 1));
-				    System.out.println("Converting 1 BTC to USD: " + CurrencyConverter.convertCoinToUSD("BTC", 1));
+				    System.out.println("Converting 1 BTC to ETH: " + CurrencyConverter.convertBTCToCoin("ETH", 1));
+				    System.out.println("Converting 1 ETH to BTC: " + CurrencyConverter.convertCoinToBTC("ETH", 1));
+				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertCoinToCoin("USDT", "BTC", 1));
 			    }
 			    // Resetting parameters for new api query
 			    m.vertices.clear();
@@ -293,7 +296,8 @@ public class Main {
 			    Main.symbols.clear();
 			    m.exchangeRates.clear();
 			    System.out.println("Number of trades executed so far: " + count);
-				Thread.sleep((long) 0.000001);
+				Thread.sleep((long) 5000);
 			}
 		}
 	}
+}

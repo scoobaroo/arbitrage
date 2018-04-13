@@ -14,6 +14,7 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.binance.BinanceExchange;
+import org.knowm.xchange.binance.service.BinanceMarketDataServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.account.AccountInfo;
@@ -21,11 +22,13 @@ import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.service.account.AccountService;
+import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.knowm.xchange.service.trade.TradeService;
 
 public class Trader {
 	protected AccountInfo info;
 	protected AccountService service;
+	protected MarketDataService marketDataService;
 	protected Exchange exchange;
 	protected TradeService tradeService;
 	protected HashMap<String,Double> exchangeRates;
@@ -61,9 +64,13 @@ public class Trader {
 		exSpec.setSecretKey(apiSecret);
 		Exchange binance = ExchangeFactory.INSTANCE.createExchange(exSpec);
 		tradeService = binance.getTradeService();
+		marketDataService = binance.getMarketDataService();
 		service = binance.getAccountService();
 		info = service.getAccountInfo();
 		getBnbBalance();
+	}
+	public void getMarketData () {
+		 
 	}
 	
 	public BigDecimal getBnbBalance() {
@@ -72,6 +79,13 @@ public class Trader {
 		BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
 		System.out.println(bnbBalanceAvailable);
 		return bnbBalanceAvailable;
+	}
+	
+	public void refillBnb() throws IOException {
+		Trade trade = new Trade(100, "BNB","BTC", "buy");
+		MarketOrder order = trade.createMarketOrder();
+		String orderReturnVal = tradeService.placeMarketOrder(order);
+		System.out.println("refillBnb ReturnVal" + orderReturnVal);
 	}
 	
 	public void executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC) throws IOException {
@@ -101,7 +115,7 @@ public class Trader {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						symbol = key2+key1;
-						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC);
+						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
@@ -109,7 +123,7 @@ public class Trader {
 			    		marketOrderList.add(trade.createMarketOrder());
 					} else {
 						orderType = "sell";
-						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC);
+						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
@@ -139,7 +153,8 @@ public class Trader {
 	    }
 	    if(Main.trade) {
 	    	for(MarketOrder order: marketOrderList) {
-	    		tradeService.placeMarketOrder(order);
+	    		String orderReturnVal = tradeService.placeMarketOrder(order);
+	    		System.out.println("Market Order Return Value: " + orderReturnVal);
 	    	}
 	    };
 	}
@@ -158,26 +173,38 @@ public class Trader {
 		vertices = v;
 	}
 	
-	public void convertCoinsToBTC() throws IOException {
+	public void convertCoinsToBTC(double ratio) throws IOException {
 		Wallet wallet = info.getWallet();
-		System.out.println(wallet.toString());
 		ArrayList<MarketOrder> convertCoinToBTCList = new ArrayList<MarketOrder>();
 		for (Vertex v : vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
-				String key1 = "BTC";
-				String key2 = v.name;
-				// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
-				// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
-				Trade trade = new Trade(CurrencyConverter.convertCoinToBTC(v.name, wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()), key1, key2, "buy");
-				// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
-				convertCoinToBTCList.add(trade.createMarketOrder());
+				if(v.name.equals("USDT")) {
+					String key1 = "BTC";
+					String key2 = v.name;
+					double amount = CurrencyConverter.convertCoinToBTC(v.name, wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()*ratio);
+					// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
+					// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
+					Trade trade = new Trade(amount, key1, key2, "buy");
+					// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
+					convertCoinToBTCList.add(trade.createMarketOrder());
+				} else {
+					String key1 = v.name;
+					String key2 = "BTC";
+					double amount = wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()*ratio;
+					// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
+					// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
+					Trade trade = new Trade(amount, key1, key2, "sell");
+					// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
+					convertCoinToBTCList.add(trade.createMarketOrder());
+				}
 			}
 		}
-		System.out.println(convertCoinToBTCList.size());
+		System.out.println("convertCoinsToBTCList size: " +convertCoinToBTCList.size());
 		System.out.println(convertCoinToBTCList);
 	    if(Main.trade) {
 	    	for(MarketOrder order: convertCoinToBTCList) {
-	    		tradeService.placeMarketOrder(order);
+	    		String orderReturnVal = tradeService.placeMarketOrder(order);
+	    		System.out.println("Market Order Return Value: " + orderReturnVal);
 	    	}
 	    };
 	}
@@ -188,17 +215,29 @@ public class Trader {
 		ArrayList<MarketOrder> convertBTCToCoinsList = new ArrayList<MarketOrder>();
 		for (Vertex v : vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
-				String key1 = "BTC";
-				String key2 = v.name;
-				Trade trade = new Trade(btcPerCoin, key1, key2, "sell");
-				convertBTCToCoinsList.add(trade.createMarketOrder());
+				if(v.name.equals("USDT")) {
+					String key1 = "BTC";
+					String key2 = v.name;
+					// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
+					// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
+					Trade trade = new Trade(btcPerCoin, key1, key2, "sell");
+					// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
+					convertBTCToCoinsList.add(trade.createMarketOrder());
+				} else {
+					String key1 = v.name;
+					String key2 = "BTC";
+					double amount = CurrencyConverter.convertBTCToCoin(v.name, btcPerCoin);
+					Trade trade = new Trade(amount, key1, key2, "buy");
+					convertBTCToCoinsList.add(trade.createMarketOrder());
+				}
 			}
 		}
 		System.out.println("Converting to " + convertBTCToCoinsList.size() + " coins");
 		System.out.println(convertBTCToCoinsList);
 	    if(Main.trade) {
 	    	for(MarketOrder order: convertBTCToCoinsList) {
-	    		tradeService.placeMarketOrder(order);
+	    		String orderReturnVal = tradeService.placeMarketOrder(order);
+	    		System.out.println("Market Order Return Value: " + orderReturnVal);
 	    	}
 	    };
 	}

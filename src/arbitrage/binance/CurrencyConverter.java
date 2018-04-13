@@ -12,30 +12,7 @@ public class CurrencyConverter {
 		exchangeRates = er;
 	}
 	
-    public static double convertUSDToCoin(String currency, double amountUSD) {
-		if(currency.toUpperCase().equals("USDT")) {
-			return amountUSD;
-		} else {
-			String symbol = "USDT"+currency.toUpperCase();
-	    	double rate = exchangeRates.get(symbol);
-	    	double amount = rate * amountUSD;
-			return amount;
-		}
-    }
-    
-    public static double convertCoinToUSD(String currency, double amountCurrency) {
-		if(currency.toUpperCase().equals("USDT")) {
-			return amountCurrency;
-		} else {
-			String symbol = currency.toUpperCase() + "USDT"; 
-			double rate = exchangeRates.get(symbol);
-	    	double amount = rate * amountCurrency;
-			return amount;
-		}
-    }
-    
     public static double convertBTCToCoin(String currency, double amountBTC) {
-    	System.out.println(exchangeRates);
     	if(currency.toUpperCase().equals("BTC")){
     		return amountBTC;
     	}
@@ -46,7 +23,7 @@ public class CurrencyConverter {
     }
     
     public static double convertCoinToBTC(String currency, double amountCurrency) {
-    	System.out.println(exchangeRates);
+    	System.out.println("Inside CurrencyConverter's convertCoinToBTC method, currency to be converted = "+currency);
     	if(currency.toUpperCase().equals("BTC")){
     		return amountCurrency;
     	}
@@ -71,6 +48,10 @@ public class CurrencyConverter {
     	if(precision==0) {
     		return new BigDecimal(Math.ceil(number));
     	}
-        return new BigDecimal(number, new MathContext(precision+1));
+    	if(number<1) {
+    		return new BigDecimal(number, new MathContext(precision));
+    	} else {
+    		return new BigDecimal(number, new MathContext(precision+1));
+    	}
     }
 }
