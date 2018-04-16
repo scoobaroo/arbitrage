@@ -13,15 +13,30 @@ import java.util.Scanner;
 public class Main {
 
 	static LinkedHashMap<String,Integer> sigDigs;
-    public static BigDecimal toPrecision(double number, int precision) {
+	
+    public static BigDecimal toPrecisionForBtcAndEth(double number, int precision) {
     	if(precision==0) {
     		return new BigDecimal(Math.ceil(number));
     	}
-        return new BigDecimal(number, new MathContext(precision+1));
+    	if(number>1) {
+    		return toPrecision(number,precision);
+    	} else {
+    		return new BigDecimal(number, new MathContext(precision));
+        }
     }
+        
+    public static BigDecimal toPrecision(double x, int precision) {
+        if ( x > 0) {
+            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_FLOOR);
+        } else {
+            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_CEILING);
+        }
+    }
+    
 	public static void main(String[] args) {
-		double one = 1.123456;
-		System.out.println(toPrecision(one,0));
+		double num =  0.007373;
+		System.out.println(toPrecision(num,6));
+		System.out.println(toPrecisionForBtcAndEth(num,6));
 		
 		// TODO Auto-generated method stub
 //		sigDigs = new LinkedHashMap<String,Integer>();

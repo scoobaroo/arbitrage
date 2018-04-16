@@ -32,16 +32,46 @@ public class Trade {
 		String symbol = key1+key2;
 		if(buyOrSell.toUpperCase().equals("BUY")) {
 			System.out.println("creating a BUY order");
-		    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol))).build();
-//		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
+			BigDecimal amt = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol));
+		    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(amt).build();
 		    System.out.println(marketOrder);
-		    return marketOrder;	    
+		    return marketOrder;
 		} else {
 			System.out.println("creating a SELL order");
-			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol))).build();
-//		    tradeService.placeBitfinexMarketOrder(marketOrder, BitfinexOrderType.MARKET);
+			BigDecimal adjustedAmount = new BigDecimal(0);
+//			if(key1.equals("BTC")||key1.equals("ETH")||key1.equals("LTC")||key1.equals("BCC")) { // this is strictly for BTC/USDT, ETH/USDT, LTC/USDT, BCC/USDT pairs
+//				if(key2.equals("USDT")) {
+//					adjustedAmount = CurrencyConverter.toPrecisionForBtcAndEth(amount,Main.sigDigs.get(symbol));
+//				}
+//			} else {
+				adjustedAmount = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol));
+//			}
+			MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(adjustedAmount).build();
 			System.out.println(marketOrder);
 		    return marketOrder;
 		}
+	}
+	
+	public MarketOrder createMarketOrderForExchanging(){
+		CurrencyPair pair = new CurrencyPair(key1, key2);
+		String symbol = key1+key2;
+		if(buyOrSell.toUpperCase().equals("BUY")) {
+			System.out.println("creating a BUY order");
+			BigDecimal adjustedAmount = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol));
+			if(adjustedAmount.compareTo(BigDecimal.ZERO)!=0) {
+			    MarketOrder marketOrder = new MarketOrder.Builder(OrderType.BID, pair).originalAmount(adjustedAmount).build();
+			    System.out.println(marketOrder);
+			    return marketOrder;
+			}
+		} else {
+			System.out.println("creating a SELL order");
+			BigDecimal adjustedAmount = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol));
+			if(adjustedAmount.compareTo(BigDecimal.ZERO)!=0) {
+				MarketOrder marketOrder = new MarketOrder.Builder(OrderType.ASK, pair).originalAmount(adjustedAmount).build();
+				System.out.println(marketOrder);
+			    return marketOrder;
+			}
+		}
+		return null;
 	}
 }

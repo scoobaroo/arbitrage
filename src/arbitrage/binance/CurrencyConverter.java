@@ -9,6 +9,8 @@ public class CurrencyConverter {
 	protected static HashMap<String,Double> exchangeRates;
 	
 	public static void setExchangeRates(HashMap<String,Double> er) {
+		System.out.println("Setting Exchange Rates");
+		System.out.println(er);
 		exchangeRates = er;
 	}
 	
@@ -44,14 +46,23 @@ public class CurrencyConverter {
 		return amount;
     }
     
-    public static BigDecimal toPrecision(double number, int precision) {
+    public static BigDecimal toPrecisionForBtcAndEth(double number, int precision) {
     	if(precision==0) {
     		return new BigDecimal(Math.ceil(number));
     	}
-    	if(number<1) {
-    		return new BigDecimal(number, new MathContext(precision));
+    	if(number>1) {
+    		return toPrecision(number,precision);
     	} else {
-    		return new BigDecimal(number, new MathContext(precision+1));
-    	}
+    		return new BigDecimal(number, new MathContext(precision));
+        }
     }
+        
+    public static BigDecimal toPrecision(double x, int precision) {
+        if ( x > 0) {
+            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_FLOOR);
+        } else {
+            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_CEILING);
+        }
+    }
+    
 }

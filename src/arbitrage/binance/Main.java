@@ -23,7 +23,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class Main {
 	static boolean debug = false;
-	static boolean trade = false;
+	static boolean trade = true;
 	protected static LinkedHashMap<String,Integer> sigDigs;	
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
@@ -263,8 +263,9 @@ public class Main {
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = g.bestCycle.size() * 0.0005;
+			    double tradingFee = g.bestCycle.size() * 0.001;
 			    System.out.println(sequence);
+			    System.out.println("BNB BALNACE: "+  t.getBnbBalance());
 			    if(1+tradingFee<g.maxRatio) {
 			    		count++;
 			    		maxRatios += g.maxRatio;
@@ -279,6 +280,15 @@ public class Main {
 			    		profits += profit;
 			    		double profitAvg = profits/count;
 			    		System.out.println("Average profit so far: " + profitAvg);
+			    		if(t.getBnbBalance().doubleValue()<1) {
+			    			System.out.println("REFILLING BNB!!!!!!");
+			    			System.out.println("REFILLING BNB!!!!!!");
+			    			System.out.println("REFILLING BNB!!!!!!");
+			    			System.out.println("REFILLING BNB!!!!!!");
+			    			System.out.println("REFILLING BNB!!!!!!");
+			    			t.refillBnb();
+			    		}
+//			    		System.exit(0);
 			    }
 			    if(debug) {
 				    System.out.println(m.exchangeRates);
@@ -296,7 +306,7 @@ public class Main {
 			    Main.symbols.clear();
 			    m.exchangeRates.clear();
 			    System.out.println("Number of trades executed so far: " + count);
-				Thread.sleep((long) 5000);
+				Thread.sleep((long) 1);
 			}
 		}
 	}
