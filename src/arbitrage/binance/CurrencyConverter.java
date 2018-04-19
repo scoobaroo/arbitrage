@@ -9,7 +9,7 @@ public class CurrencyConverter {
 	protected static HashMap<String,Double> exchangeRates;
 	
 	public static void setExchangeRates(HashMap<String,Double> er) {
-		System.out.println("Setting Exchange Rates");
+		System.out.println("Setting CurrencyConverter Exchange Rates...");
 		System.out.println(er);
 		exchangeRates = er;
 	}

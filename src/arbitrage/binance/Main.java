@@ -24,13 +24,15 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = true;
-	protected static LinkedHashMap<String,Integer> sigDigs;	
+	protected static LinkedHashMap<String,Integer> sigDigs;
+	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
 	protected HashSet<Edge> setOfEdges;
 	protected LinkedHashMap<String,Double> exchangeRates;
-	protected LinkedHashMap<String,Double> transactionAmounts;
+	protected static LinkedHashMap<String,Double> exchangePrices;
+	protected static LinkedHashMap<String,Double> transactionAmounts;
 	protected Map<String, Edge> edgeMap;
 	protected HashMap<String, Vertex> vertexMap;
 	protected HashSet<Vertex> setOfVertices;
@@ -41,8 +43,10 @@ public class Main {
 	
 	private Main() {
 		sigDigs = new LinkedHashMap<String,Integer> ();
+		sigDigsForPricing = new LinkedHashMap<String,Integer>();
 		transactionAmounts = new LinkedHashMap<String,Double>();
 		exchangeRates = new LinkedHashMap<String,Double>();
+		exchangePrices = new LinkedHashMap<String,Double>();
 		symbols = new ArrayList<String>();
 		vertices = new ArrayList<Vertex>();
 		setOfVertices = new HashSet<Vertex>();
@@ -52,7 +56,6 @@ public class Main {
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
 		tickerArray = new org.json.JSONArray();
-		sigDigs = new LinkedHashMap<String,Integer>();
         String csvFile = "BinanceTradingRule-Master.csv";
         BufferedReader br = null;
         String line = "";
@@ -72,6 +75,31 @@ public class Main {
             if (br != null) {
                 try {
                     br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        String csvFile2 = "BinanceTradingRule-MinPrice.csv";
+        BufferedReader br2 = null;
+        String line2 = "";
+        try {
+            br2 = new BufferedReader(new FileReader(csvFile2));
+            while ((line2 = br2.readLine()) != null) {
+                String[] elements = line2.split(",");
+                String symbol = elements[0].replace("/","");
+                Integer sigDigit = Integer.valueOf(elements[2]);
+                sigDigsForPricing.put(symbol,sigDigit);
+            }
+            System.out.println(sigDigsForPricing);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br2 != null) {
+                try {
+                    br2.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -180,6 +208,8 @@ public class Main {
 				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
 				exchangeRates.put(pair.toUpperCase(), bid);
 				exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
+				exchangePrices.put(pair.toUpperCase(), bid);
+				exchangePrices.put(pairReversed.toUpperCase(), ask);
 				transactionAmounts.put(pair, bidSize);
 				transactionAmounts.put(pairReversed, askSize);
 			}
@@ -204,7 +234,7 @@ public class Main {
     //make graph with graphstream
     
 	@SuppressWarnings("resource")
-	public static void main(String[] args) throws UnirestException, JsonParseException, IOException, ParseException, InterruptedException{
+	public static void main(String[] args) throws UnirestException, ParseException, IOException{
 		Main m = new Main();
 		Exchange binanceExchange = new BinanceExchange();
 		Trader t = new Trader(binanceExchange);
@@ -213,7 +243,12 @@ public class Main {
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
 		int choice = Integer.valueOf(reader.next());
 		if(choice==999) {
-			m.getExchangeRates();
+			try {
+				m.getExchangeRates();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			Vertex src = g.v0;
 			g.BellmanFord(g, src);
@@ -228,7 +263,12 @@ public class Main {
 			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
 			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
 			if(choiceToConvertBTCToCoins==888) {
-				m.getExchangeRates();
+				try {
+					m.getExchangeRates();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				CurrencyConverter.setExchangeRates(m.exchangeRates);
 				t.setExchangeRates(m.exchangeRates);
 				t.setVertices(m.vertices);
@@ -252,43 +292,53 @@ public class Main {
 			double maxRatios = 0;
 			double profits = 0;
 			while(true) {
-				m.getExchangeRates();
-				System.out.println(m.exchangeRates);
+				try {
+					m.getExchangeRates();
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				t.setVertices(m.vertices);
 				t.setExchangeRates(m.exchangeRates);
-				t.setTransactionAmounts(m.transactionAmounts);
 				CurrencyConverter.setExchangeRates(m.exchangeRates);
+				t.setTransactionAmounts(Main.transactionAmounts);
 				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
 				// Just grabbing first vertex in vertices because we don't care about what source is.
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = g.bestCycle.size() * 0.001;
+			    double tradingFee = g.bestCycle.size() * 0.0005;
 			    System.out.println(sequence);
 			    System.out.println("BNB BALNACE: "+  t.getBnbBalance());
+			    boolean tradeBool;
 			    if(1+tradingFee<g.maxRatio) {
-			    		count++;
-			    		maxRatios += g.maxRatio;
-			    		System.out.println("Executing trade sequence");
-			    		t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
+		    		maxRatios += g.maxRatio;
+		    		try {
+						t.getBalancesAndEqualize(0.002, 0.004);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+		    		System.out.println("Executing trade sequence");
+		    		tradeBool= t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
+		    		if(tradeBool && Main.trade) count++;
 //			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
-			    		double ratioAvg = maxRatios/count;
-			    		System.out.println("Average ratio so far: " + ratioAvg);
-			    		System.out.println("Number of trades executed so far: " + count);
-			    		double profit = (g.maxRatio-(1+tradingFee));
-			    		System.out.println("Profit made from this sequence: "+ profit);
-			    		profits += profit;
-			    		double profitAvg = profits/count;
-			    		System.out.println("Average profit so far: " + profitAvg);
-			    		if(t.getBnbBalance().doubleValue()<1) {
-			    			System.out.println("REFILLING BNB!!!!!!");
-			    			System.out.println("REFILLING BNB!!!!!!");
-			    			System.out.println("REFILLING BNB!!!!!!");
-			    			System.out.println("REFILLING BNB!!!!!!");
-			    			System.out.println("REFILLING BNB!!!!!!");
-			    			t.refillBnb();
-			    		}
-//			    		System.exit(0);
+		    		double ratioAvg = maxRatios/count;
+		    		System.out.println("Average ratio so far: " + ratioAvg);
+		    		System.out.println("Number of trades executed so far: " + count);
+		    		double profit = (g.maxRatio-(1+tradingFee));
+		    		System.out.println("Profit made from this sequence: "+ profit);
+		    		profits += profit;
+		    		double profitAvg = profits/count;
+		    		System.out.println("Average profit so far: " + profitAvg);
+		    		if(t.getBnbBalance().doubleValue()<1) {
+		    			System.out.println("REFILLING BNB!!!!!!");
+		    			System.out.println("REFILLING BNB!!!!!!");
+		    			System.out.println("REFILLING BNB!!!!!!");
+		    			System.out.println("REFILLING BNB!!!!!!");
+		    			System.out.println("REFILLING BNB!!!!!!");
+		    			t.refillBnb();
+		    		}
 			    }
 			    if(debug) {
 				    System.out.println(m.exchangeRates);
@@ -306,7 +356,12 @@ public class Main {
 			    Main.symbols.clear();
 			    m.exchangeRates.clear();
 			    System.out.println("Number of trades executed so far: " + count);
-				Thread.sleep((long) 1);
+				try {
+					Thread.sleep((long) 1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}
