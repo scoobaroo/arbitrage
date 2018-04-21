@@ -29,7 +29,7 @@ public class CurrencyConverter {
     	if(currency.toUpperCase().equals("BTC")){
     		return amountCurrency;
     	}
-		String symbol = currency.toUpperCase() + "BTC"; 
+		String symbol = currency.toUpperCase() + "BTC";
 		double rate = exchangeRates.get(symbol);
 		double amount = rate * amountCurrency;
 		return amount;

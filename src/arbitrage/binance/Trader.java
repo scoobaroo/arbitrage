@@ -123,7 +123,7 @@ public class Trader {
 			double availableBTCBalance = currenciesAndBalances.get(v); 
 			System.out.println("Coin " +v.toString() + " is in coinsNeeded list.");
 			if(!v.toString().equals("BTC")) {
-				double amount = 0.003;
+				double amount = 0.002;
 				if(v.toString().equals("USDT")) {
 					Trade trade = new Trade(amount, "BTC", v.toString(), "sell");
 					limitOrderList2.add(trade.createLimitOrder());
@@ -145,24 +145,35 @@ public class Trader {
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
-		System.out.println("EQUALIZING!!!");
-		System.out.println("EQUALIZING!!!");
 		currenciesAndBalances.clear();
 		Thread.sleep(1000);
 	}
 
+	public BigDecimal getETHBalance() {
+		Wallet wallet = info.getWallet();
+		Balance ethBalanceAll = wallet.getBalance(new Currency("eth"));
+		BigDecimal ethBalanceAvailable = ethBalanceAll.getAvailable();
+		return ethBalanceAvailable;
+	}
+	
+	public void refillETH() throws IOException {
+		Trade trade = new Trade(0.05, "ETH","BTC", "buy");
+		LimitOrder order = trade.createLimitOrder();
+		String orderReturnVal = tradeService.placeLimitOrder(order);
+		System.out.println("refillBnb ReturnVal" + orderReturnVal);
+	}
+	
 	public BigDecimal getBnbBalance() {
 		Wallet wallet = info.getWallet();
 		Balance bnbBalanceAll = wallet.getBalance(new Currency("bnb"));
 		BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
-		System.out.println(bnbBalanceAvailable);
 		return bnbBalanceAvailable;
 	}
 	
 	public void refillBnb() throws IOException {
-		Trade trade = new Trade(3, "BNB","BTC", "buy");
-		MarketOrder order = trade.createMarketOrder();
-		String orderReturnVal = tradeService.placeMarketOrder(order);
+		Trade trade = new Trade(2, "BNB","BTC", "buy");
+		LimitOrder order = trade.createLimitOrder();
+		String orderReturnVal = tradeService.placeLimitOrder(order);
 		System.out.println("refillBnb ReturnVal" + orderReturnVal);
 	}
 	
@@ -204,8 +215,6 @@ public class Trader {
 						double amountOfCointToBeBought = CurrencyConverter.convertCoinToBTC(key2, amt);
 						if (amountOfCointToBeBought < askOrBidSizeInBTC) {
 							System.out.println("SETTING shouldTrade to FALSE!!!");
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							System.out.println("SETTING shouldTrade to FALSE!!!");
 							shouldTrade = false;
 						}
 						Trade trade = new Trade(amt, key2, key1, orderType);
@@ -218,8 +227,6 @@ public class Trader {
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
 						double amountOfCointToBeSold = CurrencyConverter.convertCoinToBTC(key1, startingAmt);
 						if (amountOfCointToBeSold < askOrBidSizeInBTC) {
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							System.out.println("SETTING shouldTrade to FALSE!!!");
 							System.out.println("SETTING shouldTrade to FALSE!!!");
 							shouldTrade = false;
 						}
@@ -237,8 +244,6 @@ public class Trader {
 						double amountOfCointToBeBought = CurrencyConverter.convertCoinToBTC(key2, amt);
 						if (amountOfCointToBeBought < askOrBidSizeInBTC) {
 							System.out.println("SETTING shouldTrade to FALSE!!!");
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							System.out.println("SETTING shouldTrade to FALSE!!!");
 							shouldTrade = false;
 						}
 						Trade trade = new Trade(amt, key2, key1, orderType);
@@ -250,8 +255,6 @@ public class Trader {
 						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
 						double amountOfCointToBeSold = CurrencyConverter.convertCoinToBTC(key1, oldAmt);
 						if (amountOfCointToBeSold < askOrBidSizeInBTC) {
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							System.out.println("SETTING shouldTrade to FALSE!!!");
 							System.out.println("SETTING shouldTrade to FALSE!!!");
 							shouldTrade = false;
 						}

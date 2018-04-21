@@ -277,6 +277,22 @@ public class Main {
 				double amountBTCToConvert = Double.valueOf(reader.next());
 				t.convertBTCToCoins(amountBTCToConvert);
 			}
+			System.out.println("Would you like to equalize currencies for trading? Enter ANY NUMBER for no, 666 for yes");
+			int choiceToEqualize = Integer.valueOf(reader.next());
+			if(choiceToEqualize==666) {
+				try {
+					m.getExchangeRates();
+					CurrencyConverter.setExchangeRates(m.exchangeRates);
+					t.setExchangeRates(m.exchangeRates);
+					t.setVertices(m.vertices);
+					t.getBalancesAndEqualize(0.002, 0.004);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+					System.out.println("Doing nothing for this EXCEPTION!!!!!!!");
+				}
+			}
 			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
 			String baseAmountBTCString = reader.next();
 			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
@@ -310,15 +326,17 @@ public class Main {
 			    ArrayList<Vertex> sequence = g.bestCycle;
 			    double tradingFee = g.bestCycle.size() * 0.0005;
 			    System.out.println(sequence);
-			    System.out.println("BNB BALNACE: "+  t.getBnbBalance());
+			    System.out.println("BNB AVAILABLE BALANCE: "+  t.getBnbBalance());
+			    System.out.println("ETH AVAILABLE BALANCE: "+ t.getETHBalance());
 			    boolean tradeBool;
 			    if(1+tradingFee<g.maxRatio) {
+//			    	try {
+//						t.getBalancesAndEqualize(0.002, 0.004);
+//					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+//						e.printSta1ckTrace();
+//					}
 		    		maxRatios += g.maxRatio;
-		    		try {
-						t.getBalancesAndEqualize(0.002, 0.004);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
 		    		System.out.println("Executing trade sequence");
 		    		tradeBool= t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
 		    		if(tradeBool && Main.trade) count++;
@@ -331,13 +349,13 @@ public class Main {
 		    		profits += profit;
 		    		double profitAvg = profits/count;
 		    		System.out.println("Average profit so far: " + profitAvg);
-		    		if(t.getBnbBalance().doubleValue()<1) {
-		    			System.out.println("REFILLING BNB!!!!!!");
-		    			System.out.println("REFILLING BNB!!!!!!");
-		    			System.out.println("REFILLING BNB!!!!!!");
-		    			System.out.println("REFILLING BNB!!!!!!");
+		    		if(t.getBnbBalance().doubleValue()<2) {
 		    			System.out.println("REFILLING BNB!!!!!!");
 		    			t.refillBnb();
+		    		}
+		    		if(t.getETHBalance().doubleValue()<0.1) {
+		    			System.out.println("REFILLING ETH!!!!!!");
+		    			t.refillETH();
 		    		}
 			    }
 			    if(debug) {
@@ -357,7 +375,7 @@ public class Main {
 			    m.exchangeRates.clear();
 			    System.out.println("Number of trades executed so far: " + count);
 				try {
-					Thread.sleep((long) 1000);
+					Thread.sleep((long) 100);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
