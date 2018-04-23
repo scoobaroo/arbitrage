@@ -289,8 +289,6 @@ public class Main {
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				} finally {
-					System.out.println("Doing nothing for this EXCEPTION!!!!!!!");
 				}
 			}
 			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
@@ -375,7 +373,7 @@ public class Main {
 			    m.exchangeRates.clear();
 			    System.out.println("Number of trades executed so far: " + count);
 				try {
-					Thread.sleep((long) 100);
+					Thread.sleep((long) .0001);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
