@@ -76,6 +76,8 @@ public class Trader {
 		HashMap<Vertex, Double> currenciesAndBalances = new LinkedHashMap<Vertex,Double>();
 		ArrayList<Vertex> coinsToConvertToBTC = new ArrayList<Vertex>();
 		ArrayList<Vertex> coinsNeeded = new ArrayList<Vertex>();
+		List<LimitOrder> limitOrderList1 = new ArrayList<LimitOrder>();
+		List<LimitOrder> limitOrderList2 = new ArrayList<LimitOrder>();
 		for (Vertex v : vertices) {
 			double coinBalance = wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue();
 			double btcValue = CurrencyConverter.convertCoinToBTC(v.toString(), coinBalance);
@@ -92,7 +94,6 @@ public class Trader {
 			}
 		}
 		for(Vertex v: coinsToConvertToBTC) {
-			List<LimitOrder> limitOrderList1 = new ArrayList<LimitOrder>();
 			if(!v.toString().equals("BTC")) {
 				double availableBTCBalance = currenciesAndBalances.get(v); 
 				System.out.println("Coin " +v.toString() + " is in coinsToConvertToBTC list.");			
@@ -108,18 +109,9 @@ public class Trader {
 						limitOrderList1.add(trade.createLimitOrder());
 					}
 				}
-				if(Main.trade) {
-			    	for(LimitOrder order: limitOrderList1) {
-			    		if(order!=null) {
-			    			String orderReturnVal = tradeService.placeLimitOrder(order);
-			    			System.out.println("coinsToConvertToBTC Order Return Value: " + orderReturnVal);
-			    		}
-			    	}
-				}
 			}
 		}
 		for(Vertex v: coinsNeeded) {
-			List<LimitOrder> limitOrderList2 = new ArrayList<LimitOrder>();
 			double availableBTCBalance = currenciesAndBalances.get(v); 
 			System.out.println("Coin " +v.toString() + " is in coinsNeeded list.");
 			if(!v.toString().equals("BTC")) {
@@ -132,15 +124,21 @@ public class Trader {
 					Trade trade = new Trade(amountCoin, v.toString(), "BTC", "buy");
 					limitOrderList2.add(trade.createLimitOrder());
 				}
-				if(Main.trade) {
-			    	for(LimitOrder order: limitOrderList2) {
-			    		if(order!=null) {
-			    			String orderReturnVal = tradeService.placeLimitOrder(order);
-			    			System.out.println("coinsNeeded Order Return Value: " + orderReturnVal);
-			    		}
-			    	}
-				}
 			}
+		}
+		if(Main.trade) {
+	    	for(LimitOrder order: limitOrderList1) {
+	    		if(order!=null) {
+	    			String orderReturnVal = tradeService.placeLimitOrder(order);
+	    			System.out.println("coinsToConvertToBTC Order Return Value: " + orderReturnVal);
+	    		}
+	    	}
+	    	for(LimitOrder order: limitOrderList2) {
+	    		if(order!=null) {
+	    			String orderReturnVal = tradeService.placeLimitOrder(order);
+	    			System.out.println("coinsNeeded Order Return Value: " + orderReturnVal);
+	    		}
+	    	}
 		}
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
@@ -201,8 +199,6 @@ public class Trader {
 	    		key2 = sequence.get(i+1).toString().toUpperCase();
 	    		symbol = key1+key2;
 				double rate = exchangeRates.get(symbol);
-				double transactionAmt = Main.transactionAmounts.get(symbol);
-				double askOrBidSizeInBTC = CurrencyConverter.convertCoinToBTC(key1, transactionAmt);
 				System.out.println("We got " + rate + " for " +symbol);
 	    		if(i==0) {
 		    		if(!Main.symbols.contains(symbol)) {
@@ -212,11 +208,6 @@ public class Trader {
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
-						double amountOfCointToBeBought = CurrencyConverter.convertCoinToBTC(key2, amt);
-						if (amountOfCointToBeBought < askOrBidSizeInBTC) {
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							shouldTrade = false;
-						}
 						Trade trade = new Trade(amt, key2, key1, orderType);
 			    		limitOrderList.add(trade.createLimitOrder());
 					} else {
@@ -225,11 +216,6 @@ public class Trader {
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
 						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
-						double amountOfCointToBeSold = CurrencyConverter.convertCoinToBTC(key1, startingAmt);
-						if (amountOfCointToBeSold < askOrBidSizeInBTC) {
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							shouldTrade = false;
-						}
 						Trade trade = new Trade(startingAmt, key1, key2, orderType);
 						limitOrderList.add(trade.createLimitOrder());
 					}
@@ -241,11 +227,6 @@ public class Trader {
 						oldAmt = amt;
 						amt = rate * oldAmt;
 						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
-						double amountOfCointToBeBought = CurrencyConverter.convertCoinToBTC(key2, amt);
-						if (amountOfCointToBeBought < askOrBidSizeInBTC) {
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							shouldTrade = false;
-						}
 						Trade trade = new Trade(amt, key2, key1, orderType);
 						limitOrderList.add(trade.createLimitOrder());
 					} else {
@@ -253,11 +234,6 @@ public class Trader {
 						oldAmt = amt;
 						amt = rate * oldAmt;
 						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
-						double amountOfCointToBeSold = CurrencyConverter.convertCoinToBTC(key1, oldAmt);
-						if (amountOfCointToBeSold < askOrBidSizeInBTC) {
-							System.out.println("SETTING shouldTrade to FALSE!!!");
-							shouldTrade = false;
-						}
 						Trade trade = new Trade(oldAmt, key1, key2, orderType);
 						limitOrderList.add(trade.createLimitOrder());
 					}
