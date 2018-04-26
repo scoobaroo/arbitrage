@@ -4,11 +4,19 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Scanner;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 
 public class Main {
 
@@ -33,18 +41,40 @@ public class Main {
         }
     }
     
-	public static void main(String[] args) {
+	public static void main(String[] args) throws FileNotFoundException {
+		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
+		Gson gson = new Gson();
+		JsonReader reader = new JsonReader(new FileReader("balances.json"));
+		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
+		System.out.println(balances);
+		reader = new JsonReader(new FileReader("exchangeRates.json"));
+		HashMap<String,Double> exchangeRates = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
+		System.out.println(exchangeRates);
+		double BTCValue = 0;
+		for(Entry<String, Double> entry: balances.entrySet()) {
+			String coinString = entry.getKey();
+			double balance = entry.getValue();
+			double btcValueForCoin = 0;
+			if(!coinString.equals("BTC")) {
+				double exchangeRate = exchangeRates.get(coinString.toUpperCase()+"BTC");
+				btcValueForCoin = balance * exchangeRate;
+			} else {
+				btcValueForCoin = balance;
+			}
+			BTCValue+=btcValueForCoin;
+		}
+		System.out.println("Total Bitcoin Value: " + BTCValue);
 //		double num =  0.007373;
 //		System.out.println(toPrecision(num,6));
 //		System.out.println(toPrecisionForBtcAndEth(num,6));
 
-		Double d = 0.00001;
-		String text = Double.toString(Math.abs(d));
-		text = text.replace("0","8");
-		int integerPlaces = text.indexOf('.');
-		int decimalPlaces = text.length() - integerPlaces;
-		System.out.println(text);
-		System.out.println(decimalPlaces);
+//		Double d = 0.00001;
+//		String text = Double.toString(Math.abs(d));
+//		text = text.replace("0","8");
+//		int integerPlaces = text.indexOf('.');
+//		int decimalPlaces = text.length() - integerPlaces;
+//		System.out.println(text);
+//		System.out.println(decimalPlaces);
 		// TODO Auto-generated method stub
 //		sigDigs = new LinkedHashMap<String,Integer>();
 //		String s = "ETHBTC, LTCBTC, BNBBTC, NEOBTC, QTUMETH, EOSETH, SNTETH, BNTETH, BCCBTC, GASBTC, BNBETH, BTCUSDT, ETHUSDT, HSRBTC, OAXETH, DNTETH, MCOETH, ICNETH, MCOBTC, WTCBTC, WTCETH, LRCBTC, LRCETH, QTUMBTC, YOYOBTC, OMGBTC, OMGETH, ZRXBTC, ZRXETH, STRATBTC, STRATETH, SNGLSBTC, SNGLSETH, BQXBTC, BQXETH, KNCBTC, KNCETH, FUNBTC, FUNETH, SNMBTC, SNMETH, NEOETH, IOTABTC, IOTAETH, LINKBTC, LINKETH, XVGBTC, XVGETH, SALTBTC, SALTETH, MDABTC, MDAETH, MTLBTC, MTLETH, SUBBTC, SUBETH, EOSBTC, SNTBTC, ETCETH, ETCBTC, MTHBTC, MTHETH, ENGBTC, ENGETH, DNTBTC, ZECBTC, ZECETH, BNTBTC, ASTBTC, ASTETH, DASHBTC, DASHETH, OAXBTC, ICNBTC, BTGBTC, BTGETH, EVXBTC, EVXETH, REQBTC, REQETH, VIBBTC, VIBETH, HSRETH, TRXBTC, TRXETH, POWRBTC, POWRETH, ARKBTC, ARKETH, YOYOETH, XRPBTC, XRPETH, MODBTC, MODETH, ENJBTC, ENJETH, STORJBTC, STORJETH, BNBUSDT, VENBNB, YOYOBNB, POWRBNB, VENBTC, VENETH, KMDBTC, KMDETH, NULSBNB, RCNBTC, RCNETH, RCNBNB, NULSBTC, NULSETH, RDNBTC, RDNETH, RDNBNB, XMRBTC, XMRETH, DLTBNB, WTCBNB, DLTBTC, DLTETH, AMBBTC, AMBETH, AMBBNB, BCCETH, BCCUSDT, BCCBNB, BATBTC, BATETH, BATBNB, BCPTBTC, BCPTETH, BCPTBNB, ARNBTC, ARNETH, GVTBTC, GVTETH, CDTBTC, CDTETH, GXSBTC, GXSETH, NEOUSDT, NEOBNB, POEBTC, POEETH, QSPBTC, QSPETH, QSPBNB, BTSBTC, BTSETH, BTSBNB, XZCBTC, XZCETH, XZCBNB, LSKBTC, LSKETH, LSKBNB, TNTBTC, TNTETH, FUELBTC, FUELETH, MANABTC, MANAETH, BCDBTC, BCDETH, DGDBTC, DGDETH, IOTABNB, ADXBTC, ADXETH, ADXBNB, ADABTC, ADAETH, PPTBTC, PPTETH, CMTBTC, CMTETH, CMTBNB, XLMBTC, XLMETH, XLMBNB, CNDBTC, CNDETH, CNDBNB, LENDBTC, LENDETH, WABIBTC, WABIETH, WABIBNB, LTCETH, LTCUSDT, LTCBNB, TNBBTC, TNBETH, WAVESBTC, WAVESETH, WAVESBNB, GTOBTC, GTOETH, GTOBNB, ICXBTC, ICXETH, ICXBNB, OSTBTC, OSTETH, OSTBNB, ELFBTC, ELFETH, AIONBTC, AIONETH, AIONBNB, NEBLBTC, NEBLETH, NEBLBNB, BRDBTC, BRDETH, BRDBNB, MCOBNB, EDOBTC, EDOETH, WINGSBTC, WINGSETH, NAVBTC, NAVETH, NAVBNB, LUNBTC, LUNETH, TRIGBTC, TRIGETH, TRIGBNB, APPCBTC, APPCETH, APPCBNB, VIBEBTC, VIBEETH, RLCBTC, RLCETH, RLCBNB, INSBTC, INSETH, PIVXBTC, PIVXETH, PIVXBNB, IOSTBTC, IOSTETH, CHATBTC, CHATETH, STEEMBTC, STEEMETH, STEEMBNB, NANOBTC, NANOETH, NANOBNB, VIABTC, VIAETH, VIABNB, BLZBTC, BLZETH, BLZBNB, AEBTC, AEETH, AEBNB, RPXBTC, RPXETH, RPXBNB, NCASHBTC, NCASHETH, NCASHBNB, POABTC, POAETH, POABNB, ZILBTC, ZILETH, ZILBNB, ONTBTC, ONTETH, ONTBNB, STORMBTC, STORMETH, STORMBNB, QTUMBNB, QTUMUSDT, XEMBTC, XEMETH, XEMBNB, WANBTC, WANETH, WANBNB, WPRBTC, WPRETH, QLCBTC, QLCETH, SYSBTC, SYSETH, SYSBNB, QLCBNB, GRSBTC, GRSETH";

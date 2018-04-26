@@ -234,7 +234,7 @@ public class Main {
     //make graph with graphstream
     
 	@SuppressWarnings("resource")
-	public static void main(String[] args) throws UnirestException, ParseException, IOException{
+	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
 		Main m = new Main();
 		Exchange binanceExchange = new BinanceExchange();
 		Trader t = new Trader(binanceExchange);
@@ -284,8 +284,10 @@ public class Main {
 					m.getExchangeRates();
 					CurrencyConverter.setExchangeRates(m.exchangeRates);
 					t.setExchangeRates(m.exchangeRates);
+					int bcdIndex = m.vertices.indexOf(m.findVertex("BCD"));
+					m.vertices.remove(bcdIndex);
 					t.setVertices(m.vertices);
-					t.getBalancesAndEqualize(0.002, 0.004);
+					t.getBalancesAndEqualize(0.0018, 0.004);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -312,20 +314,32 @@ public class Main {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
+			    System.out.println("BNB AVAILABLE BALANCE: "+  t.getBnbBalance());
+			    System.out.println("ETH AVAILABLE BALANCE: "+ t.getETHBalance());
+	    		if(t.getBnbBalance().doubleValue()<2) {
+	    			System.out.println("REFILLING BNB!!!!!!");
+	    			t.refillBnb();
+	    		}
+	    		if(t.getETHBalance().doubleValue()<0.05) {
+	    			System.out.println("REFILLING ETH!!!!!!");
+	    			t.refillETH();
+	    		}
 				t.setVertices(m.vertices);
 				t.setExchangeRates(m.exchangeRates);
 				CurrencyConverter.setExchangeRates(m.exchangeRates);
 				t.setTransactionAmounts(Main.transactionAmounts);
+//				t.getHighestBalance();
+//				t.calculateCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
+//				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 				Graph g = new Graph(m.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
 				// Just grabbing first vertex in vertices because we don't care about what source is.
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = g.bestCycle.size() * 0.0005;
+			    double tradingFee = (g.bestCycle.size()+2) * 0.0005; //adding 2 for buffer
 			    System.out.println(sequence);
-			    System.out.println("BNB AVAILABLE BALANCE: "+  t.getBnbBalance());
-			    System.out.println("ETH AVAILABLE BALANCE: "+ t.getETHBalance());
+
 			    boolean tradeBool;
 			    if(1+tradingFee<g.maxRatio) {
 //			    	try {
@@ -347,14 +361,6 @@ public class Main {
 		    		profits += profit;
 		    		double profitAvg = profits/count;
 		    		System.out.println("Average profit so far: " + profitAvg);
-		    		if(t.getBnbBalance().doubleValue()<2) {
-		    			System.out.println("REFILLING BNB!!!!!!");
-		    			t.refillBnb();
-		    		}
-		    		if(t.getETHBalance().doubleValue()<0.1) {
-		    			System.out.println("REFILLING ETH!!!!!!");
-		    			t.refillETH();
-		    		}
 			    }
 			    if(debug) {
 				    System.out.println(m.exchangeRates);
