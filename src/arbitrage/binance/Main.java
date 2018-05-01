@@ -1,20 +1,12 @@
 package binance;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
 import java.util.*;
-
-import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.binance.BinanceExchange;
-import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
-
-import com.fasterxml.jackson.core.JsonParseException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -27,16 +19,15 @@ public class Main {
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected static ArrayList<Vertex> vertices;
-	protected ArrayList<Edge> edges;
+	protected static HashSet<Edge> setOfEdges;
+	protected static ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
-	protected HashSet<Edge> setOfEdges;
 	protected static LinkedHashMap<String,Double> exchangeRates;
 	protected static LinkedHashMap<String,Double> exchangePrices;
 	protected static LinkedHashMap<String,Double> transactionAmounts;
-	protected Map<String, Edge> edgeMap;
-	protected HashMap<String, Vertex> vertexMap;
-	protected HashSet<Vertex> setOfVertices;
-	protected boolean firstTime;
+	protected static Map<String, Edge> edgeMap;
+	protected static HashMap<String, Vertex> vertexMap;
+	protected static HashSet<Vertex> setOfVertices;
 	protected double baseAmountBTC;
 	protected Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	protected org.json.JSONArray tickerArray;
@@ -51,7 +42,6 @@ public class Main {
 		vertices = new ArrayList<Vertex>();
 		setOfVertices = new HashSet<Vertex>();
 		edges = new ArrayList<Edge>();
-		firstTime = true;
 		setOfEdges = new HashSet<Edge>();
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
@@ -118,9 +108,9 @@ public class Main {
 //	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
 //
 
-	public void populateVertices(org.json.JSONArray list) {
+	public static void populateVertices(org.json.JSONArray list) {
 		Set<Vertex> vertexSet = new HashSet<Vertex>();
-		Map<String,Vertex> vertexMap = new HashMap<String,Vertex>();
+		vertexMap = new HashMap<String,Vertex>();
 		for(Object o : list) {
 			String key1= "", key2 = "";
 			org.json.JSONObject obj = (org.json.JSONObject) o;
@@ -159,7 +149,7 @@ public class Main {
 		}
 	}
 	
-	public void getExchangeRates() throws UnirestException, InterruptedException {
+	public static void getExchangeRates() throws UnirestException, InterruptedException {
 		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.binance.com/api/v3/ticker/bookTicker").asJson();
 		org.json.JSONArray list = jsonResponse.getBody().getArray();
 		if(debug==true) {
@@ -221,7 +211,7 @@ public class Main {
 		if (debug) System.out.println("list length: " + list.length());
 	}
 	
-    public Vertex findVertex(String name) {
+    public static Vertex findVertex(String name) {
 		for(Vertex v: vertices) {
 			if(v.name.equalsIgnoreCase(name)) {
 				return v;
@@ -230,8 +220,14 @@ public class Main {
 		return null; 
     }
      
-    //find out if all vertices are connected to BTC/USD
-    //make graph with graphstream
+    public static void clearAll() {
+	    Main.edges.clear();
+	    Main.setOfEdges.clear();
+	    Main.edgeMap.clear();
+	    Main.exchangeRates.clear();
+	    Main.symbols.clear();
+	    Main.vertices.clear();
+    }
     
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
@@ -243,13 +239,8 @@ public class Main {
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
 		int choice = Integer.valueOf(reader.next());
 		if(choice==999) {
-			try {
-				m.getExchangeRates();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			Graph g = new Graph(Main.vertices, m.edges, Main.debug);
+			getExchangeRates();
+			Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
 			Vertex src = g.v0;
 			g.BellmanFord(g, src);
 			System.out.println("Enter percentage (0.xxx) of each currency you would like to sell:");
@@ -260,12 +251,7 @@ public class Main {
 			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
 			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
 			if(choiceToConvertBTCToCoins==888) {
-				try {
-					m.getExchangeRates();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				getExchangeRates();
 				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies:");
 				double amountBTCToConvert = Double.valueOf(reader.next());
 				t.convertBTCToCoins(amountBTCToConvert);
@@ -274,8 +260,8 @@ public class Main {
 			int choiceToEqualize = Integer.valueOf(reader.next());
 			if(choiceToEqualize==666) {
 				try {
-					m.getExchangeRates();
-					int bcdIndex = Main.vertices.indexOf(m.findVertex("BCD"));
+					getExchangeRates();
+					int bcdIndex = Main.vertices.indexOf(findVertex("BCD"));
 					Main.vertices.remove(bcdIndex);
 					t.getBalancesAndEqualize(0.0018, 0.004);
 				} catch (InterruptedException e) {
@@ -287,25 +273,21 @@ public class Main {
 			String baseAmountBTCString = reader.next();
 			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
 			reader.close();		    
-		    m.edges.clear();
-		    m.setOfEdges.clear();
-		    m.edgeMap.clear();
-		    Main.exchangeRates.clear();
-		    Main.symbols.clear();
-		    Main.vertices.clear();
+			clearAll();
 			//comment back to here for dialogs
 			int count = 0;
 			double maxRatios = 0;
 			double profits = 0;
 			while(true) {
 				try {
-					m.getExchangeRates();
+					getExchangeRates();
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			    System.out.println("BNB AVAILABLE BALANCE: "+  t.getBnbBalance());
 			    System.out.println("ETH AVAILABLE BALANCE: "+ t.getETHBalance());
+			    t.calculateCurrentMarketValueOfOldBalances();
 	    		if(t.getBnbBalance().doubleValue()<1) {
 	    			System.out.println("REFILLING BNB!!!!!!");
 //	    			t.refillBnb();
@@ -314,18 +296,20 @@ public class Main {
 	    			System.out.println("REFILLING ETH!!!!!!");
 //	    			t.refillETH();
 	    		}
-				Graph g = new Graph(Main.vertices, m.edges, Main.debug);
-			    if (debug) System.out.println(Main.symbols);
+				Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+			    if (debug) {System.out.println(Main.symbols);}
 				// Just grabbing first vertex in vertices because we don't care about what source is.
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+4) * 0.0005; //adding 5 for buffer
+			    double tradingFee = (g.bestCycle.size()+4) * 0.0005; //adding 3 for buffer
 			    boolean tradeBool;
 //				t.getHighestBalance();
-//				t.calculateCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
+//				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
 				// started at eclipse value: 0.4481173988575552
 				// binance            value: 0.44857193
+//				 difference of : 0.0004545311
+				// binance 
 				//				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 			    if(1+tradingFee<g.maxRatio) {
 //			    	try {
@@ -336,7 +320,7 @@ public class Main {
 //					}
 		    		maxRatios += g.maxRatio;
 		    		System.out.println("Executing trade sequence");
-		    		tradeBool= t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
+		    		tradeBool = t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
 		    		if(tradeBool && Main.trade) count++;
 		    		double ratioAvg = maxRatios/count;
 		    		System.out.println("Average ratio so far: " + ratioAvg);
@@ -356,12 +340,7 @@ public class Main {
 				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertCoinToCoin("USDT", "BTC", 1));
 			    }
 			    // Resetting parameters for new api query
-			    Main.vertices.clear();
-			    m.edges.clear();
-			    m.setOfEdges.clear();
-			    m.edgeMap.clear();
-			    Main.symbols.clear();
-			    Main.exchangeRates.clear();
+			    clearAll();
 			    System.out.println("Number of trades executed so far: " + count);
 				try {
 					Thread.sleep((long) .0001);

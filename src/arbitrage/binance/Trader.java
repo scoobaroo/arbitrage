@@ -79,7 +79,10 @@ public class Trader {
 		service = binance.getAccountService();
 		info = service.getAccountInfo();
 	}
-	
+	public void printCurrentMarketValueOfOldBalances() throws FileNotFoundException {
+		calculateCurrentMarketValueOfOldBalances();
+		System.exit(0);
+	}
 	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
@@ -99,8 +102,8 @@ public class Trader {
 			}
 			BTCValue+=btcValueForCoin;
 		}
+		BTCValue += 0.0004545311; //adjustment for difference in binance and eclipse's estimation
 		System.out.println("Total Bitcoin Value: " + BTCValue);
-		System.exit(0);
 	}
 	
 	public void getAccountSnapshot() throws IOException, InterruptedException {
@@ -267,16 +270,12 @@ public class Trader {
 			System.out.println(Main.symbols);
 			System.out.println("Main.symbols.size():" + Main.symbols.size());
 		}
-		List<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 		List<LimitOrder> limitOrderList = new ArrayList<LimitOrder>();
 		double amt = 0;
 		double startingAmt = 0;
 		double oldAmt = 0;
 		sequence.add(sequence.get(0));
-//		Collections.reverse(sequence);
-//		System.out.println("reversed sequence:");
 		System.out.println(sequence);
-		boolean shouldTrade = true;
 	    for(int i = 0; i< sequence.size()-1 ; i++) {
 	    		String key1;
 	    		String key2;
@@ -286,20 +285,18 @@ public class Trader {
 	    		key2 = sequence.get(i+1).toString().toUpperCase();
 	    		symbol = key1+key2;
 				double rate = Main.exchangeRates.get(symbol);
+				System.out.println("We got " + rate + " for " +symbol);
 	    		if(i==0) {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						symbol = key2+key1;
-						rate = Main.exchangeRates.get(symbol);
-						System.out.println("We got " + rate + " for " +symbol);
 						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
-						amt = startingAmt / rate;
-						System.out.println(startingAmt + " " + key1 + " / " + rate + " = " +amt + " " + key2);
+						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
 						Trade trade = new Trade(amt, key2, key1, orderType);
 			    		limitOrderList.add(trade.createLimitOrder());
 					} else {
-						System.out.println("We got " + rate + " for " +symbol);
 						orderType = "sell";
 						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
@@ -313,18 +310,15 @@ public class Trader {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						symbol = key2+key1;
-						rate = Main.exchangeRates.get(symbol);
-						System.out.println("We got " + rate + " for " +symbol);
 						oldAmt = amt;
-						amt = oldAmt / rate;
-						System.out.println(oldAmt+ " " + key1 + " / " + rate + " = " + amt + " " + key2);
+						amt = oldAmt * rate;
+						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
 						Trade trade = new Trade(amt, key2, key1, orderType);
 						limitOrderList.add(trade.createLimitOrder());
 					} else {
-						System.out.println("We got " + rate + " for " +symbol);
 						orderType = "sell";
 						oldAmt = amt;
-						amt = rate * oldAmt;
+						amt = oldAmt * rate;
 						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
 						Trade trade = new Trade(oldAmt, key1, key2, orderType);
 						limitOrderList.add(trade.createLimitOrder());
@@ -377,7 +371,6 @@ public class Trader {
 				} else {
 					String key1 = v.name;
 					String key2 = "BTC";
-					String symbol = key1+key2;
 					double amount = wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()*ratio;
 					double amountBTC = CurrencyConverter.convertCoinToBTC(v.name, amount);
 					System.out.println("Equivalent BTC balance for " + v.name+ " :" + amountBTC);
