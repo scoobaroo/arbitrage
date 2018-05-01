@@ -26,11 +26,11 @@ public class Main {
 	static boolean trade = true;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
-	protected ArrayList<Vertex> vertices;
+	protected static ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
 	protected static ArrayList<String> symbols;
 	protected HashSet<Edge> setOfEdges;
-	protected LinkedHashMap<String,Double> exchangeRates;
+	protected static LinkedHashMap<String,Double> exchangeRates;
 	protected static LinkedHashMap<String,Double> exchangePrices;
 	protected static LinkedHashMap<String,Double> transactionAmounts;
 	protected Map<String, Edge> edgeMap;
@@ -249,12 +249,9 @@ public class Main {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			Graph g = new Graph(m.vertices, m.edges, Main.debug);
+			Graph g = new Graph(Main.vertices, m.edges, Main.debug);
 			Vertex src = g.v0;
 			g.BellmanFord(g, src);
-			CurrencyConverter.setExchangeRates(m.exchangeRates);
-			t.setExchangeRates(m.exchangeRates);
-			t.setVertices(m.vertices);
 			System.out.println("Enter percentage (0.xxx) of each currency you would like to sell:");
 			double ratio = Double.valueOf(reader.next());
 			t.convertCoinsToBTC(ratio);
@@ -269,10 +266,6 @@ public class Main {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				CurrencyConverter.setExchangeRates(m.exchangeRates);
-				t.setExchangeRates(m.exchangeRates);
-				t.setVertices(m.vertices);
-				System.out.println(t.vertices);
 				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies:");
 				double amountBTCToConvert = Double.valueOf(reader.next());
 				t.convertBTCToCoins(amountBTCToConvert);
@@ -282,11 +275,8 @@ public class Main {
 			if(choiceToEqualize==666) {
 				try {
 					m.getExchangeRates();
-					CurrencyConverter.setExchangeRates(m.exchangeRates);
-					t.setExchangeRates(m.exchangeRates);
-					int bcdIndex = m.vertices.indexOf(m.findVertex("BCD"));
-					m.vertices.remove(bcdIndex);
-					t.setVertices(m.vertices);
+					int bcdIndex = Main.vertices.indexOf(m.findVertex("BCD"));
+					Main.vertices.remove(bcdIndex);
 					t.getBalancesAndEqualize(0.0018, 0.004);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -297,12 +287,12 @@ public class Main {
 			String baseAmountBTCString = reader.next();
 			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
 			reader.close();		    
-			m.vertices.clear();
 		    m.edges.clear();
 		    m.setOfEdges.clear();
 		    m.edgeMap.clear();
-		    m.exchangeRates.clear();
+		    Main.exchangeRates.clear();
 		    Main.symbols.clear();
+		    Main.vertices.clear();
 			//comment back to here for dialogs
 			int count = 0;
 			double maxRatios = 0;
@@ -316,31 +306,27 @@ public class Main {
 				}
 			    System.out.println("BNB AVAILABLE BALANCE: "+  t.getBnbBalance());
 			    System.out.println("ETH AVAILABLE BALANCE: "+ t.getETHBalance());
-	    		if(t.getBnbBalance().doubleValue()<2) {
+	    		if(t.getBnbBalance().doubleValue()<1) {
 	    			System.out.println("REFILLING BNB!!!!!!");
-	    			t.refillBnb();
+//	    			t.refillBnb();
 	    		}
 	    		if(t.getETHBalance().doubleValue()<0.05) {
 	    			System.out.println("REFILLING ETH!!!!!!");
-	    			t.refillETH();
+//	    			t.refillETH();
 	    		}
-				t.setVertices(m.vertices);
-				t.setExchangeRates(m.exchangeRates);
-				CurrencyConverter.setExchangeRates(m.exchangeRates);
-				t.setTransactionAmounts(Main.transactionAmounts);
-//				t.getHighestBalance();
-//				t.calculateCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
-//				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
-				Graph g = new Graph(m.vertices, m.edges, Main.debug);
+				Graph g = new Graph(Main.vertices, m.edges, Main.debug);
 			    if (debug) System.out.println(Main.symbols);
 				// Just grabbing first vertex in vertices because we don't care about what source is.
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+2) * 0.0005; //adding 2 for buffer
-			    System.out.println(sequence);
-
+			    double tradingFee = (g.bestCycle.size()+4) * 0.0005; //adding 5 for buffer
 			    boolean tradeBool;
+//				t.getHighestBalance();
+//				t.calculateCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
+				// started at eclipse value: 0.4481173988575552
+				// binance            value: 0.44857193
+				//				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 			    if(1+tradingFee<g.maxRatio) {
 //			    	try {
 //						t.getBalancesAndEqualize(0.002, 0.004);
@@ -352,7 +338,6 @@ public class Main {
 		    		System.out.println("Executing trade sequence");
 		    		tradeBool= t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
 		    		if(tradeBool && Main.trade) count++;
-//			    		t.executeTradeSequenceSequentially(sequence, m.baseAmountUSD);
 		    		double ratioAvg = maxRatios/count;
 		    		System.out.println("Average ratio so far: " + ratioAvg);
 		    		System.out.println("Number of trades executed so far: " + count);
@@ -363,20 +348,20 @@ public class Main {
 		    		System.out.println("Average profit so far: " + profitAvg);
 			    }
 			    if(debug) {
-				    System.out.println(m.exchangeRates);
-				    System.out.println("Size of exchange rates:" + m.exchangeRates.size());
+				    System.out.println(Main.exchangeRates);
+				    System.out.println("Size of exchange rates:" + Main.exchangeRates.size());
 				    System.out.println("Testing currency Converter:");
 				    System.out.println("Converting 1 BTC to ETH: " + CurrencyConverter.convertBTCToCoin("ETH", 1));
 				    System.out.println("Converting 1 ETH to BTC: " + CurrencyConverter.convertCoinToBTC("ETH", 1));
 				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertCoinToCoin("USDT", "BTC", 1));
 			    }
 			    // Resetting parameters for new api query
-			    m.vertices.clear();
+			    Main.vertices.clear();
 			    m.edges.clear();
 			    m.setOfEdges.clear();
 			    m.edgeMap.clear();
 			    Main.symbols.clear();
-			    m.exchangeRates.clear();
+			    Main.exchangeRates.clear();
 			    System.out.println("Number of trades executed so far: " + count);
 				try {
 					Thread.sleep((long) .0001);

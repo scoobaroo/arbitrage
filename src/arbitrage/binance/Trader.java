@@ -45,9 +45,6 @@ public class Trader {
 	protected MarketDataService marketDataService;
 	protected Exchange exchange;
 	protected TradeService tradeService;
-	protected HashMap<String,Double> exchangeRates;
-	protected HashMap<String,Double> transactionAmounts;
-	protected ArrayList<Vertex> vertices;
 	
 	public Trader(Exchange exchange) throws IOException {
 		this.exchange = exchange;
@@ -86,7 +83,7 @@ public class Trader {
 	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
-		JsonReader reader = new JsonReader(new FileReader("balances.json"));
+		JsonReader reader = new JsonReader(new FileReader("balancesNew1.json"));
 		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
 		System.out.println(balances);
 		double BTCValue = 0;
@@ -95,7 +92,7 @@ public class Trader {
 			double balance = entry.getValue();
 			double btcValueForCoin = 0;
 			if(!coinString.equals("BTC")) {
-				double exchangeRate = exchangeRates.get(coinString.toUpperCase()+"BTC");
+				double exchangeRate = Main.exchangeRates.get(coinString.toUpperCase()+"BTC");
 				btcValueForCoin = balance * exchangeRate;
 			} else {
 				btcValueForCoin = balance;
@@ -109,13 +106,13 @@ public class Trader {
 	public void getAccountSnapshot() throws IOException, InterruptedException {
 		Wallet wallet = info.getWallet();
 		HashMap<String,Double> currenciesAndCoinBalances = new HashMap<String,Double>();
-		for (Vertex v : vertices) {
+		for (Vertex v : Main.vertices) {
 			double coinBalance = wallet.getBalance(new Currency(v.name)).getTotal().doubleValue();
 			currenciesAndCoinBalances.put(v.toString(), coinBalance);
 		}
 		Gson gson = new Gson();
 		String balances = gson.toJson(currenciesAndCoinBalances);
-		FileWriter file = new FileWriter("balances.json");
+		FileWriter file = new FileWriter("balancesNew1.json");
 		try {
 			file.write(balances);
 		}catch (Exception e) {
@@ -128,8 +125,8 @@ public class Trader {
 		System.out.println("\nJSON Object: " + balances);
 		System.out.println("COIN BALANCES");
 		System.out.println(currenciesAndCoinBalances);
-		String exchangeRatesforWritingToFile = gson.toJson(exchangeRates);
-		FileWriter file2 = new FileWriter("exchangeRates.json");
+		String exchangeRatesforWritingToFile = gson.toJson(Main.exchangeRates);
+		FileWriter file2 = new FileWriter("exchangeRatesNew1.json");
 		try {
 			file2.write(exchangeRatesforWritingToFile);
 		}catch (Exception e) {
@@ -146,7 +143,7 @@ public class Trader {
 	public void getHighestBalance() {
 		Wallet wallet = info.getWallet();
 		HashMap<Vertex, Double> currenciesAndBalances = new LinkedHashMap<Vertex,Double>();
-		for (Vertex v : vertices) {
+		for (Vertex v : Main.vertices) {
 			double coinBalance = wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue();
 			double btcValue = CurrencyConverter.convertCoinToBTC(v.toString(), coinBalance);
 			currenciesAndBalances.put(v, btcValue);
@@ -164,7 +161,7 @@ public class Trader {
 		ArrayList<Vertex> coinsNeeded = new ArrayList<Vertex>();
 		List<LimitOrder> limitOrderList1 = new ArrayList<LimitOrder>();
 		List<LimitOrder> limitOrderList2 = new ArrayList<LimitOrder>();
-		for (Vertex v : vertices) {
+		for (Vertex v : Main.vertices) {
 			double coinBalance = wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue();
 			double btcValue = CurrencyConverter.convertCoinToBTC(v.toString(), coinBalance);
 			currenciesAndBalances.put(v, btcValue);
@@ -175,9 +172,7 @@ public class Trader {
 				}
 			}
 			if (btcValue < belowThreshold) {
-				if(!v.toString().equals("BCD")) {
-					coinsNeeded.add(v);
-				}
+				coinsNeeded.add(v);
 			}
 		}
 		Vertex maxV = currenciesAndBalances.entrySet().stream().max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).get().getKey();
@@ -259,17 +254,19 @@ public class Trader {
 	}
 	
 	public void refillBnb() throws IOException {
-		Trade trade = new Trade(2, "BNB","BTC", "buy");
+		Trade trade = new Trade(1, "BNB","BTC", "buy");
 		LimitOrder order = trade.createLimitOrder();
 		String orderReturnVal = tradeService.placeLimitOrder(order);
 		System.out.println("refillBnb ReturnVal" + orderReturnVal);
 	}
 	
 	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC){
-		System.out.println("Inside trader's executeTradeSequenceWithList");
-		System.out.println("Main.symbols:");
-		System.out.println(Main.symbols);
-		System.out.println("Main.symbols.size():" + Main.symbols.size());
+		if(Main.debug) {
+			System.out.println("Inside trader's executeTradeSequenceWithList");
+			System.out.println("Main.symbols:");
+			System.out.println(Main.symbols);
+			System.out.println("Main.symbols.size():" + Main.symbols.size());
+		}
 		List<MarketOrder> marketOrderList = new ArrayList<MarketOrder>();
 		List<LimitOrder> limitOrderList = new ArrayList<LimitOrder>();
 		double amt = 0;
@@ -288,19 +285,21 @@ public class Trader {
     			key1 = sequence.get(i).toString().toUpperCase();
 	    		key2 = sequence.get(i+1).toString().toUpperCase();
 	    		symbol = key1+key2;
-				double rate = exchangeRates.get(symbol);
-				System.out.println("We got " + rate + " for " +symbol);
+				double rate = Main.exchangeRates.get(symbol);
 	    		if(i==0) {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						symbol = key2+key1;
+						rate = Main.exchangeRates.get(symbol);
+						System.out.println("We got " + rate + " for " +symbol);
 						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
-						amt = startingAmt * rate;
-						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+						amt = startingAmt / rate;
+						System.out.println(startingAmt + " " + key1 + " / " + rate + " = " +amt + " " + key2);
 						Trade trade = new Trade(amt, key2, key1, orderType);
 			    		limitOrderList.add(trade.createLimitOrder());
 					} else {
+						System.out.println("We got " + rate + " for " +symbol);
 						orderType = "sell";
 						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
 						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
@@ -314,12 +313,15 @@ public class Trader {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						symbol = key2+key1;
+						rate = Main.exchangeRates.get(symbol);
+						System.out.println("We got " + rate + " for " +symbol);
 						oldAmt = amt;
-						amt = rate * oldAmt;
-						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
+						amt = oldAmt / rate;
+						System.out.println(oldAmt+ " " + key1 + " / " + rate + " = " + amt + " " + key2);
 						Trade trade = new Trade(amt, key2, key1, orderType);
 						limitOrderList.add(trade.createLimitOrder());
 					} else {
+						System.out.println("We got " + rate + " for " +symbol);
 						orderType = "sell";
 						oldAmt = amt;
 						amt = rate * oldAmt;
@@ -356,25 +358,10 @@ public class Trader {
 //	    return shouldTrade;
 	}
 	
-	public void setExchangeRates(HashMap<String,Double> er) {
-		System.out.println("Setting Trader's Exchange Rates...");
-		exchangeRates = er;
-//		System.out.println(exchangeRates);
-	}
-	
-	public void setTransactionAmounts(HashMap<String,Double> ta) {
-		transactionAmounts = ta;
-//		System.out.println(exchangeRates);
-	}
-	
-	public void setVertices(ArrayList<Vertex> v) {
-		vertices = v;
-	}
-
 	public void convertCoinsToBTC(double ratio) throws IOException {
 		Wallet wallet = info.getWallet();
 		ArrayList<LimitOrder> convertCoinsToBTCList = new ArrayList<LimitOrder>();
-		for (Vertex v : vertices) {
+		for (Vertex v : Main.vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
 				if(v.name.equals("USDT")) {
 					String key1 = "BTC";
@@ -415,9 +402,9 @@ public class Trader {
 	
 	public void convertBTCToCoins(double amountBTC) throws IOException {
 		System.out.println("Converting " + amountBTC + " BTC to all availabe cryptocurrencies");
-		double btcPerCoin = amountBTC/(vertices.size()-1);
+		double btcPerCoin = amountBTC/(Main.vertices.size()-1);
 		ArrayList<MarketOrder> convertBTCToCoinsList = new ArrayList<MarketOrder>();
-		for (Vertex v : vertices) {
+		for (Vertex v : Main.vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
 				if(v.name.equals("USDT")) {
 					String key1 = "BTC";

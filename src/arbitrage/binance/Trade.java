@@ -33,9 +33,10 @@ public class Trade {
 		String symbol = "";
 		if(buyOrSell.toUpperCase().equals("BUY")) {
 			System.out.println("creating a BUY Limit Order");
-			symbol = key2 + key1;
 			BigDecimal amt = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(key1+key2));
-			BigDecimal price = CurrencyConverter.toPrecision(Main.exchangePrices.get(symbol),Main.sigDigsForPricing.get(key1+key2));
+			symbol = key2 + key1;
+			double exchangePrice = Main.exchangePrices.get(symbol);
+			BigDecimal price = CurrencyConverter.toPrecision(exchangePrice,Main.sigDigsForPricing.get(key1+key2));
 		    LimitOrder limitOrder = new LimitOrder.Builder(OrderType.BID, pair).originalAmount(amt).limitPrice(price).build();
 		    System.out.println(limitOrder);
 		    return limitOrder;
@@ -43,7 +44,8 @@ public class Trade {
 			System.out.println("creating a SELL Limit Order");
 			symbol = key1 + key2;
 			BigDecimal amt = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol));
-			BigDecimal price = CurrencyConverter.toPrecision(Main.exchangePrices.get(symbol),Main.sigDigsForPricing.get(symbol));
+			double exchangePrice = Main.exchangePrices.get(symbol);
+			BigDecimal price = CurrencyConverter.toPrecision(exchangePrice,Main.sigDigsForPricing.get(symbol));
 			LimitOrder limitOrder = new LimitOrder.Builder(OrderType.ASK, pair).originalAmount(amt).limitPrice(price).build();
 			System.out.println(limitOrder);
 		    return limitOrder;

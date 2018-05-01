@@ -5,21 +5,13 @@ import java.math.MathContext;
 import java.util.HashMap;
 
 public class CurrencyConverter {
-	
-	protected static HashMap<String,Double> exchangeRates;
-	
-	public static void setExchangeRates(HashMap<String,Double> er) {
-		System.out.println("Setting CurrencyConverter Exchange Rates...");
-		System.out.println(er);
-		exchangeRates = er;
-	}
-	
+		
     public static double convertBTCToCoin(String currency, double amountBTC) {
     	if(currency.toUpperCase().equals("BTC")){
     		return amountBTC;
     	}
 		String symbol = "BTC"+currency.toUpperCase(); 
-		double rate = exchangeRates.get(symbol);
+		double rate = Main.exchangeRates.get(symbol);
 		double amount = rate * amountBTC;
 		return amount;
     }
@@ -30,7 +22,7 @@ public class CurrencyConverter {
     		return amountCurrency;
     	}
 		String symbol = currency.toUpperCase() + "BTC";
-		double rate = exchangeRates.get(symbol);
+		double rate = Main.exchangeRates.get(symbol);
 		double amount = rate * amountCurrency;
 		return amount;
     }
@@ -41,7 +33,7 @@ public class CurrencyConverter {
     		return amountCoin;
     	}
 		String symbol = currency1.toUpperCase() + currency2.toUpperCase();
-		double rate = exchangeRates.get(symbol);
+		double rate = Main.exchangeRates.get(symbol);
 		double amount = rate * amountCoin;
 		return amount;
     }
