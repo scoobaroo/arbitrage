@@ -25,6 +25,7 @@ import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.binance.BinanceExchange;
 import org.knowm.xchange.binance.service.BinanceMarketDataServiceRaw;
 import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.account.Balance;
@@ -103,8 +104,8 @@ public class Trader {
 			}
 			BTCValue+=btcValueForCoin;
 		}
-//		BTCValue += 0.0004545311; //adjustment for difference in binance and eclipse's estimation
-		System.out.println("Total Bitcoin Value (without using bot): " + BTCValue);
+		double USDValue = BTCValue * Main.exchangeRates.get("BTCUSDT");
+		System.out.println("Total Bitcoin Value (without using bot): " + BTCValue + ", USD Value Equivalent: "+ USDValue);
 	}
 	
 	public void getAccountSnapshot() throws IOException, InterruptedException {
@@ -264,8 +265,7 @@ public class Trader {
 		System.out.println("refillBnb ReturnVal" + orderReturnVal);
 	}
 	
-	public boolean filterSequence(List<Vertex> sequence, double amountBTC) {
-		boolean shouldTrade = true;
+	public ShouldTrade filterSequence(List<Vertex> sequence, double amountBTC) {
 		sequence.add(sequence.get(0));
 		System.out.println(sequence);
 		ArrayList<String> zerosList = new ArrayList<String>();
@@ -290,17 +290,107 @@ public class Trader {
     			numZeros++;
     			zerosList.add(symbol);
     			System.out.println("we are filtering out " +symbol + " because its sigDig==0");
-    			shouldTrade = false;
+    			return new ShouldTrade(false, false);
     		}
 		}
 		//////----NEW FEATURE IMPLEMENTATION
-		if(numZeros==2) {
+		if(numZeros==1) {
 			System.out.println(zerosList);
-			HashMap<String,Double> zerosAndTheirAmounts = new HashMap<String,Double>();
-			List<LimitOrder> limitOrderList = new ArrayList<LimitOrder>();
+			HashMap<String,LimitOrder> symbolsAndOrders = new HashMap<String,LimitOrder>();
 			double amt = 0;
 			double startingAmt = 0;
 			double oldAmt = 0;
+		    for(int i = 0; i< sequence.size()-1 ; i++) {
+	    		String key1;
+	    		String key2;
+	    		String symbol;
+	    		String orderType;
+				key1 = sequence.get(i).toString().toUpperCase();
+	    		key2 = sequence.get(i+1).toString().toUpperCase();
+	    		symbol = key1+key2;
+				double rate = Main.exchangeRates.get(symbol);
+	    		if(i==0) {
+		    		if(!Main.symbols.contains(symbol)) {
+						orderType = "buy";
+						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
+						amt = startingAmt * rate;
+						Trade trade = new Trade(amt, key2, key1, orderType);
+						LimitOrder limitOrder = trade.createLimitOrder();
+						symbolsAndOrders.put(symbol, limitOrder);
+					} else {
+						orderType = "sell";
+						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
+						amt = startingAmt * rate;
+						Trade trade = new Trade(startingAmt, key1, key2, orderType);
+						LimitOrder limitOrder = trade.createLimitOrder();
+						symbolsAndOrders.put(symbol, limitOrder);
+					}
+	    		} else {
+		    		if(!Main.symbols.contains(symbol)) {
+						orderType = "buy";
+						oldAmt = amt;
+						amt = oldAmt * rate;
+						Trade trade = new Trade(amt, key2, key1, orderType);
+						LimitOrder limitOrder = trade.createLimitOrder();
+						symbolsAndOrders.put(symbol, limitOrder);
+					} else {
+						orderType = "sell";
+						oldAmt = amt;
+						amt = oldAmt * rate;
+						Trade trade = new Trade(oldAmt, key1, key2, orderType);
+						LimitOrder limitOrder = trade.createLimitOrder();
+						double originalAmount = limitOrder.getOriginalAmount().doubleValue();
+						symbolsAndOrders.put(symbol, limitOrder);
+					}
+	    		}
+	    		LimitOrder zeroOrder = symbolsAndOrders.get(zerosList.get(0));
+	    		double zeroAmt = zeroOrder.getOriginalAmount().doubleValue();
+	    		OrderType zeroOrderType = zeroOrder.getType();
+	    		CurrencyPair cp = zeroOrder.getCurrencyPair();
+	    		int intAmt = (int) Math.ceil(zeroAmt);
+	    		String[] pairArr = cp.toString().split("_");
+	    		String key = pairArr[0];
+	    	    ArrayList<String> sequenceString = new ArrayList<String>();
+	    	    for(Vertex v: sequence) {
+	    	    	sequenceString.add(v.toString());
+	    	    }
+	    	    int index = sequenceString.indexOf(key);
+	    	    double newAmt = 0;
+	    	    for (int k = index; k > 1; k--) {
+	    	    	String upKey = sequenceString.get(k);
+	    	    	String downKey = sequenceString.get(k-1);
+	    	    	double conversionRate = Main.exchangeRates.get(downKey+upKey);
+	    	    	if(k==index) {
+	    	    		newAmt = intAmt / conversionRate;
+	    	    	} else {
+	    	    		newAmt = newAmt / conversionRate; 
+	    	    	}
+	    	    }
+	    	    return new ShouldTrade(true, false);
+//	    	    return new ShouldTrade(true, true ,newAmt); // uncomment this to execute on more trades...
+		    }
+		}
+		///--- END FEATURE IMPLEMENTATION
+		return new ShouldTrade(true, false);
+	}
+	
+	
+	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC){
+		ShouldTrade shouldTrade = filterSequence(sequence, amountBTC);
+		boolean shouldWeTrade = shouldTrade.isShouldTrade();
+		boolean isNewTrade = shouldTrade.isNewTrade();
+		if(Main.debug) {
+			System.out.println("Inside trader's executeTradeSequenceWithList");
+			System.out.println("Main.symbols:");
+			System.out.println(Main.symbols);
+			System.out.println("Main.symbols.size():" + Main.symbols.size());
+		}
+		List<LimitOrder> limitOrderList = new ArrayList<LimitOrder>();
+		if(!isNewTrade) {
+			double amt = 0;
+			double startingAmt = 0;
+			double oldAmt = 0;
+			System.out.println(sequence);
 		    for(int i = 0; i< sequence.size()-1 ; i++) {
 	    		String key1;
 	    		String key2;
@@ -315,106 +405,87 @@ public class Trader {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
+						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
 						Trade trade = new Trade(amt, key2, key1, orderType);
-						LimitOrder limitOrder = trade.createLimitOrder();
-						double originalAmount = limitOrder.getOriginalAmount().doubleValue();
-						zerosAndTheirAmounts.put(symbol, originalAmount);
+			    		limitOrderList.add(trade.createLimitOrder());
 					} else {
 						orderType = "sell";
 						startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
+						System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
 						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
 						Trade trade = new Trade(startingAmt, key1, key2, orderType);
-						LimitOrder limitOrder = trade.createLimitOrder();
-						double originalAmount = limitOrder.getOriginalAmount().doubleValue();
-						zerosAndTheirAmounts.put(symbol, originalAmount);
+						limitOrderList.add(trade.createLimitOrder());
 					}
 	    		} else {
 		    		if(!Main.symbols.contains(symbol)) {
 						orderType = "buy";
 						oldAmt = amt;
 						amt = oldAmt * rate;
+						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
 						Trade trade = new Trade(amt, key2, key1, orderType);
-						LimitOrder limitOrder = trade.createLimitOrder();
-						double originalAmount = limitOrder.getOriginalAmount().doubleValue();
-						zerosAndTheirAmounts.put(symbol, originalAmount);
+						limitOrderList.add(trade.createLimitOrder());
 					} else {
 						orderType = "sell";
 						oldAmt = amt;
 						amt = oldAmt * rate;
+						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
 						Trade trade = new Trade(oldAmt, key1, key2, orderType);
-						LimitOrder limitOrder = trade.createLimitOrder();
-						double originalAmount = limitOrder.getOriginalAmount().doubleValue();
-						zerosAndTheirAmounts.put(symbol, originalAmount);
+						limitOrderList.add(trade.createLimitOrder());
+					}
+	    		}
+		    }
+		} else { // it is a new Trade with adjusted amounts
+			double amt = 0;
+			double startingAmt = shouldTrade.getAmount();
+			double oldAmt = 0;
+			System.out.println(sequence);
+		    for(int i = 0; i< sequence.size()-1 ; i++) {
+	    		String key1;
+	    		String key2;
+	    		String symbol;
+	    		String orderType;
+				key1 = sequence.get(i).toString().toUpperCase();
+	    		key2 = sequence.get(i+1).toString().toUpperCase();
+	    		symbol = key1+key2;
+				double rate = Main.exchangeRates.get(symbol);
+				System.out.println("We got " + rate + " for " +symbol);
+	    		if(i==0) {
+		    		if(!Main.symbols.contains(symbol)) {
+						orderType = "buy";
+						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+						Trade trade = new Trade(amt, key2, key1, orderType);
+			    		limitOrderList.add(trade.createLimitOrder());
+					} else {
+						orderType = "sell";
+						amt = startingAmt * rate;
+						System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
+						Trade trade = new Trade(startingAmt, key1, key2, orderType);
+						limitOrderList.add(trade.createLimitOrder());
+					}
+	    		} else {
+		    		if(!Main.symbols.contains(symbol)) {
+						orderType = "buy";
+						oldAmt = amt;
+						amt = oldAmt * rate;
+						System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
+						Trade trade = new Trade(amt, key2, key1, orderType);
+						limitOrderList.add(trade.createLimitOrder());
+					} else {
+						orderType = "sell";
+						oldAmt = amt;
+						amt = oldAmt * rate;
+						System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
+						Trade trade = new Trade(oldAmt, key1, key2, orderType);
+						limitOrderList.add(trade.createLimitOrder());
 					}
 	    		}
 		    }
 		}
-		///--- END FEATURE IMPLEMENTATION
-		return shouldTrade;
-	}
-	
-	
-	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC){
-		boolean shouldTrade = filterSequence(sequence, amountBTC);
-		if(Main.debug) {
-			System.out.println("Inside trader's executeTradeSequenceWithList");
-			System.out.println("Main.symbols:");
-			System.out.println(Main.symbols);
-			System.out.println("Main.symbols.size():" + Main.symbols.size());
-		}
-		List<LimitOrder> limitOrderList = new ArrayList<LimitOrder>();
-		double amt = 0;
-		double startingAmt = 0;
-		double oldAmt = 0;
-		System.out.println(sequence);
-	    for(int i = 0; i< sequence.size()-1 ; i++) {
-    		String key1;
-    		String key2;
-    		String symbol;
-    		String orderType;
-			key1 = sequence.get(i).toString().toUpperCase();
-    		key2 = sequence.get(i+1).toString().toUpperCase();
-    		symbol = key1+key2;
-			double rate = Main.exchangeRates.get(symbol);
-			System.out.println("We got " + rate + " for " +symbol);
-    		if(i==0) {
-	    		if(!Main.symbols.contains(symbol)) {
-					orderType = "buy";
-					startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
-					System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
-					amt = startingAmt * rate;
-					System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
-					Trade trade = new Trade(amt, key2, key1, orderType);
-		    		limitOrderList.add(trade.createLimitOrder());
-				} else {
-					orderType = "sell";
-					startingAmt = CurrencyConverter.convertBTCToCoin(key1, amountBTC); //getting amount of coin with respect to amountBTC
-					System.out.println(amountBTC + " BTC = " + startingAmt + " " + key1);
-					amt = startingAmt * rate;
-					System.out.println(startingAmt + " " + key1 + " * " + rate + " = " +amt + " " + key2);
-					Trade trade = new Trade(startingAmt, key1, key2, orderType);
-					limitOrderList.add(trade.createLimitOrder());
-				}
-    		} else {
-	    		if(!Main.symbols.contains(symbol)) {
-					orderType = "buy";
-					oldAmt = amt;
-					amt = oldAmt * rate;
-					System.out.println(oldAmt+ " " + key1 + " * " + rate + " = " + amt + " " + key2);
-					Trade trade = new Trade(amt, key2, key1, orderType);
-					limitOrderList.add(trade.createLimitOrder());
-				} else {
-					orderType = "sell";
-					oldAmt = amt;
-					amt = oldAmt * rate;
-					System.out.println(oldAmt + " " + key1 + " * " + rate + " = " + amt + " " + key2);
-					Trade trade = new Trade(oldAmt, key1, key2, orderType);
-					limitOrderList.add(trade.createLimitOrder());
-				}
-    		}
-	    }
-	    if(Main.trade && shouldTrade) {
+	    if(Main.trade && shouldWeTrade) {
 	    	for(LimitOrder order: limitOrderList) {
 	    		if(order!=null) {
 		    		String orderReturnVal;
@@ -428,7 +499,7 @@ public class Trader {
 	    		}
 	    	}
 	    };
-	    return shouldTrade;
+	    return shouldWeTrade;
 	}
 	
 	public void convertCoinsToBTC(double ratio) throws IOException {

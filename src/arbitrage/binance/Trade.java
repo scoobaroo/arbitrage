@@ -32,7 +32,6 @@ public class Trade {
 		CurrencyPair pair = new CurrencyPair(key1, key2);
 		String symbol = "";
 		if(buyOrSell.toUpperCase().equals("BUY")) {
-			System.out.println("creating a BUY Limit Order");
 			BigDecimal amt = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(key1+key2));
 			symbol = key2 + key1;
 			double exchangePrice = Main.exchangePrices.get(symbol);
@@ -41,7 +40,6 @@ public class Trade {
 		    System.out.println(limitOrder);
 		    return limitOrder;
 		} else {
-			System.out.println("creating a SELL Limit Order");
 			symbol = key1 + key2;
 			BigDecimal amt = CurrencyConverter.toPrecision(amount,Main.sigDigs.get(symbol));
 			double exchangePrice = Main.exchangePrices.get(symbol);
