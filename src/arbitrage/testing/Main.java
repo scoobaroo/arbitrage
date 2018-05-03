@@ -8,6 +8,7 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,10 +19,39 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
-public class Main {
+import binance.Vertex;
 
+public class Main {
 	static LinkedHashMap<String,Integer> sigDigs;
 	
+	public Main() {
+		sigDigs = new LinkedHashMap<String,Integer>();
+        String csvFile = "BinanceTradingRule-Master.csv";
+        BufferedReader br = null;
+        String line = "";
+        try {
+            br = new BufferedReader(new FileReader(csvFile));
+            while ((line = br.readLine()) != null) {
+                String[] elements = line.split(",");
+                String symbol = elements[0].replace("/","");
+                sigDigs.put(symbol, Integer.valueOf(elements[1]));
+            }
+            System.out.println(sigDigs);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+	}
+
     public static BigDecimal toPrecisionForBtcAndEth(double number, int precision) {
     	if(precision==0) {
     		return new BigDecimal(Math.ceil(number));
@@ -41,29 +71,67 @@ public class Main {
         }
     }
     
-	public static void main(String[] args) throws FileNotFoundException {
-		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
-		Gson gson = new Gson();
-		JsonReader reader = new JsonReader(new FileReader("balances.json"));
-		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
-		System.out.println(balances);
-		reader = new JsonReader(new FileReader("exchangeRates.json"));
-		HashMap<String,Double> exchangeRates = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
-		System.out.println(exchangeRates);
-		double BTCValue = 0;
-		for(Entry<String, Double> entry: balances.entrySet()) {
-			String coinString = entry.getKey();
-			double balance = entry.getValue();
-			double btcValueForCoin = 0;
-			if(!coinString.equals("BTC")) {
-				double exchangeRate = exchangeRates.get(coinString.toUpperCase()+"BTC");
-				btcValueForCoin = balance * exchangeRate;
-			} else {
-				btcValueForCoin = balance;
-			}
-			BTCValue+=btcValueForCoin;
+	public boolean filterSequence(List<Vertex> sequence) {
+		boolean shouldTrade = true;
+		sequence.add(sequence.get(0));
+		System.out.println(sequence);
+		for(int i = 0; i< sequence.size()-1 ; i++) {
+    		String key1;
+    		String key2;
+    		String symbol;
+			key1 = sequence.get(i).toString().toUpperCase();
+    		key2 = sequence.get(i+1).toString().toUpperCase();
+    		symbol = key1+"/"+key2;
+    		int sigDig = 999;
+    		if(Main.sigDigs.containsKey(symbol)) {
+    			sigDig = Main.sigDigs.get(symbol);
+    			System.out.println(symbol + " got sigDig of " + sigDig);
+    		} else{
+    			symbol = key2 + "/" + key1;
+    			sigDig = Main.sigDigs.get(symbol);
+    			System.out.println(symbol + " got sigDig of " + sigDig);
+    		};
+    		if(sigDig==0) {
+    			System.out.println("we are filtering out " +symbol + " because its sigDig==0");
+    			shouldTrade = false;
+    		}
 		}
-		System.out.println("Total Bitcoin Value: " + BTCValue);
+		return shouldTrade;
+	}
+	
+	public static void main(String[] args) throws FileNotFoundException {
+		ArrayList<Vertex> seq = new ArrayList<Vertex>();
+		seq.add(new Vertex("ONT"));
+		seq.add(new Vertex("BTC"));
+		seq.add(new Vertex("BNB"));
+		seq.add(new Vertex("ETH"));
+		seq.add(new Vertex("BAT"));
+		seq.add(new Vertex("XVG"));
+		
+		
+		
+//		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
+//		Gson gson = new Gson();
+//		JsonReader reader = new JsonReader(new FileReader("balances.json"));
+//		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
+//		System.out.println(balances);
+//		reader = new JsonReader(new FileReader("exchangeRates.json"));
+//		HashMap<String,Double> exchangeRates = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
+//		System.out.println(exchangeRates);
+//		double BTCValue = 0;
+//		for(Entry<String, Double> entry: balances.entrySet()) {
+//			String coinString = entry.getKey();
+//			double balance = entry.getValue();
+//			double btcValueForCoin = 0;
+//			if(!coinString.equals("BTC")) {
+//				double exchangeRate = exchangeRates.get(coinString.toUpperCase()+"BTC");
+//				btcValueForCoin = balance * exchangeRate;
+//			} else {
+//				btcValueForCoin = balance;
+//			}
+//			BTCValue+=btcValueForCoin;
+//		}
+//		System.out.println("Total Bitcoin Value: " + BTCValue);
 //		double num =  0.007373;
 //		System.out.println(toPrecision(num,6));
 //		System.out.println(toPrecisionForBtcAndEth(num,6));
