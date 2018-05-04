@@ -278,7 +278,6 @@ public class Main {
 			int count = 0;
 			int unexecutedCount = 0;
 			double maxRatios = 0;
-			double profits = 0;
 			while(true) {
 				try {
 					getExchangeRates();
@@ -303,14 +302,14 @@ public class Main {
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+3) * 0.0005; //adding 3 for buffer
+			    double tradingFee = (g.bestCycle.size()+2) * 0.0005; //adding 3 for buffer
 			    boolean tradeBool;
 //				t.getHighestBalance();
 //				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
 //				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 			    if(1+tradingFee<g.maxRatio) {
 //			    	try {
-//						t.getBalancesAndEqualize(0.002, 0.004);
+//						t.getBalancesAndEqualize(0.002, 0.005);
 //					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 //						e.printSta1ckTrace();

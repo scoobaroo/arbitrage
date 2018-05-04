@@ -13,6 +13,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
+
+import org.knowm.xchange.currency.CurrencyPair;
+
 import java.util.Scanner;
 
 import com.google.gson.Gson;
@@ -100,15 +103,9 @@ public class Main {
 	}
 	
 	public static void main(String[] args) throws FileNotFoundException {
-		ArrayList<Vertex> seq = new ArrayList<Vertex>();
-		seq.add(new Vertex("ONT"));
-		seq.add(new Vertex("BTC"));
-		seq.add(new Vertex("BNB"));
-		seq.add(new Vertex("ETH"));
-		seq.add(new Vertex("BAT"));
-		seq.add(new Vertex("XVG"));
-		
-		
+		double zeroAmt = 26538.222;
+		int intAmt = (int) Math.ceil(zeroAmt);
+		System.out.println(intAmt);
 		
 //		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 //		Gson gson = new Gson();
