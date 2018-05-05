@@ -8,10 +8,16 @@ import java.util.*;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.binance.BinanceExchange;
+<<<<<<< HEAD
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
+=======
+import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.dto.account.Balance;
+import org.knowm.xchange.dto.account.Wallet;
+>>>>>>> 136a1ddaae126232b931ece136e67ab92c5ee089
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -239,7 +245,8 @@ public class Main {
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
 		Main m = new Main();
 		Exchange binanceExchange = new BinanceExchange();
-		Trader t = new Trader(binanceExchange);
+		ConservativeTrader t = new ConservativeTrader(binanceExchange);
+//		Trader t = new Trader(binanceExchange);
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		//uncomment below lines to have dialogs
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
@@ -284,7 +291,6 @@ public class Main {
 			int count = 0;
 			int unexecutedCount = 0;
 			double maxRatios = 0;
-			double profits = 0;
 			while(true) {
 				try {
 					getExchangeRates();
@@ -292,6 +298,7 @@ public class Main {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
+<<<<<<< HEAD
 				Wallet w = t.info.getWallet();
 			    Balance bnbBalanceAll = w.getBalance(new Currency("bnb"));
 				BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
@@ -300,6 +307,16 @@ public class Main {
 			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
 			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
 			    t.calculateCurrentMarketValueOfOldBalances();
+=======
+			    t.calculateCurrentMarketValueOfOldBalances();
+			    Wallet w = t.info.getWallet();
+			    Balance bnbBalanceAll = w.getBalance(new Currency("bnb"));
+				BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
+				Balance ethBalanceAll = w.getBalance(new Currency("eth"));
+				BigDecimal ethBalanceAvailable = ethBalanceAll.getAvailable();
+			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
+			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
+>>>>>>> 136a1ddaae126232b931ece136e67ab92c5ee089
 	    		if(bnbBalanceAvailable.doubleValue()<1) {
 	    			System.out.println("REFILLING BNB!!!!!!");
 //	    			t.refillBnb();
@@ -321,7 +338,7 @@ public class Main {
 //				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 			    if(1+tradingFee<g.maxRatio) {
 //			    	try {
-//						t.getBalancesAndEqualize(0.002, 0.004);
+//						t.getBalancesAndEqualize(0.002, 0.005);
 //					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 //						e.printSta1ckTrace();

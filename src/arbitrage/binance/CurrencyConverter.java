@@ -51,10 +51,11 @@ public class CurrencyConverter {
         
     public static BigDecimal toPrecision(double x, int precision) {
         if ( x > 0) {
+//            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_HALF_UP);
             return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_FLOOR);
         } else {
-            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_CEILING);
+//            return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_HALF_UP);
+        	return new BigDecimal(String.valueOf(x)).setScale(precision, BigDecimal.ROUND_CEILING);
         }
-    }
-    
+    }   
 }
