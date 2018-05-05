@@ -5,8 +5,8 @@ public class ShouldTrade {
 	boolean shouldTrade;
 	boolean isNewTrade;
 	public ShouldTrade(boolean shouldTrade, boolean isNewTrade) {
-		this.isNewTrade = isNewTrade;
 		this.shouldTrade = shouldTrade;
+		this.isNewTrade = isNewTrade;
 	}
 	public ShouldTrade(boolean shouldTrade, boolean isNewTrade, double amt) {
 		this.shouldTrade = shouldTrade;

@@ -3,10 +3,15 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.binance.BinanceExchange;
+import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.dto.account.Balance;
+import org.knowm.xchange.dto.account.Wallet;
+
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -233,7 +238,8 @@ public class Main {
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
 		Main m = new Main();
 		Exchange binanceExchange = new BinanceExchange();
-		Trader t = new Trader(binanceExchange);
+		ConservativeTrader t = new ConservativeTrader(binanceExchange);
+//		Trader t = new Trader(binanceExchange);
 		Scanner reader = new Scanner(System.in);  // Reading from System.in
 		//uncomment below lines to have dialogs
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
@@ -285,14 +291,19 @@ public class Main {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-			    System.out.println("BNB AVAILABLE BALANCE: "+  t.getBnbBalance());
-			    System.out.println("ETH AVAILABLE BALANCE: "+ t.getETHBalance());
 			    t.calculateCurrentMarketValueOfOldBalances();
-	    		if(t.getBnbBalance().doubleValue()<1) {
+			    Wallet w = t.info.getWallet();
+			    Balance bnbBalanceAll = w.getBalance(new Currency("bnb"));
+				BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
+				Balance ethBalanceAll = w.getBalance(new Currency("eth"));
+				BigDecimal ethBalanceAvailable = ethBalanceAll.getAvailable();
+			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
+			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
+	    		if(bnbBalanceAvailable.doubleValue()<1) {
 	    			System.out.println("REFILLING BNB!!!!!!");
 //	    			t.refillBnb();
 	    		}
-	    		if(t.getETHBalance().doubleValue()<0.05) {
+	    		if(ethBalanceAvailable.doubleValue()<0.05) {
 	    			System.out.println("REFILLING ETH!!!!!!");
 //	    			t.refillETH();
 	    		}
@@ -302,7 +313,7 @@ public class Main {
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+2) * 0.0005; //adding 3 for buffer
+			    double tradingFee = (g.bestCycle.size()+3) * 0.0005; //adding 3 for buffer
 			    boolean tradeBool;
 //				t.getHighestBalance();
 //				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES

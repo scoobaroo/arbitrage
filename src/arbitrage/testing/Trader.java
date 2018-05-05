@@ -1,4 +1,4 @@
-package binance;
+package testing;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -88,7 +88,7 @@ public class Trader {
 	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
-		JsonReader reader = new JsonReader(new FileReader("balancesNewNew.json"));
+		JsonReader reader = new JsonReader(new FileReader("balancesNew.json"));
 		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
 		System.out.println(balances);
 		double BTCValue = 0;
