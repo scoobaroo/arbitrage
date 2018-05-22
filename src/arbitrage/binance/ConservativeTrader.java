@@ -53,7 +53,7 @@ public class ConservativeTrader {
 		InputStream input = null;
 		String apiKey = "", apiSecret = "";
 		try {
-			input = new FileInputStream("/Users/suejanehan/workspace/config.properties");
+			input = new FileInputStream("/Users/suejanehan/workspace/binanceConfig.properties");
 			prop.load(input);
 //			System.out.println(prop.getProperty("apiKey"));
 //			System.out.println(prop.getProperty("apiSecret"));
@@ -80,6 +80,7 @@ public class ConservativeTrader {
 		service = binance.getAccountService();
 		info = service.getAccountInfo();
 	}
+	
 	public void printCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		calculateCurrentMarketValueOfOldBalances();
 		System.exit(0);
@@ -88,23 +89,24 @@ public class ConservativeTrader {
 	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
-		JsonReader reader = new JsonReader(new FileReader("balancesNewNew.json"));
+		JsonReader reader = new JsonReader(new FileReader("balances.json"));
 		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
-		System.out.println(balances);
+//		System.out.println(balances);
 		double BTCValue = 0;
 		for(Entry<String, Double> entry: balances.entrySet()) {
 			String coinString = entry.getKey();
 			double balance = entry.getValue();
 			double btcValueForCoin = 0;
 			if(!coinString.equals("BTC")) {
-				double exchangeRate = Main.exchangeRates.get(coinString.toUpperCase()+"BTC");
+				double exchangeRate = Main.exchangeRatesMid.get(coinString.toUpperCase()+"BTC");
+//				double exchangeRate = Main.exchangeRates.get(coinString.toUpperCase()+"BTC");
 				btcValueForCoin = balance * exchangeRate;
 			} else {
 				btcValueForCoin = balance;
 			}
 			BTCValue+=btcValueForCoin;
 		}
-		double USDValue = BTCValue * Main.exchangeRates.get("BTCUSDT");
+		double USDValue = BTCValue * Main.exchangeRatesMid.get("BTCUSDT");
 		System.out.println("Total Bitcoin Value (without using bot): " + BTCValue + ", USD Value Equivalent: "+ USDValue);
 	}
 	
@@ -117,7 +119,7 @@ public class ConservativeTrader {
 		}
 		Gson gson = new Gson();
 		String balances = gson.toJson(currenciesAndCoinBalances);
-		FileWriter file = new FileWriter("balancesNewNew.json");
+		FileWriter file = new FileWriter("balances.json");
 		try {
 			file.write(balances);
 		}catch (Exception e) {
@@ -130,18 +132,19 @@ public class ConservativeTrader {
 		System.out.println("\nJSON Object: " + balances);
 		System.out.println("COIN BALANCES");
 		System.out.println(currenciesAndCoinBalances);
-		String exchangeRatesforWritingToFile = gson.toJson(Main.exchangeRates);
-		FileWriter file2 = new FileWriter("exchangeRatesNewNew.json");
-		try {
-			file2.write(exchangeRatesforWritingToFile);
-		}catch (Exception e) {
-			System.out.println(e);
-		}
-		finally {
-			file2.close();
-		}
-		System.out.println("Successfully Copied Exchange Rate Object to File...");
-		System.out.println("\nJSON Object: " + exchangeRatesforWritingToFile);
+		//UNCOMMENT BELOW TO TAKE SNAPSHOT OF EXCHANGE RATES
+//		String exchangeRatesforWritingToFile = gson.toJson(Main.exchangeRates);
+//		FileWriter file2 = new FileWriter("exchangeRatesNewNew.json");
+//		try {
+//			file2.write(exchangeRatesforWritingToFile);
+//		}catch (Exception e) {
+//			System.out.println(e);
+//		}
+//		finally {
+//			file2.close();
+//		}
+//		System.out.println("Successfully Copied Exchange Rate Object to File...");
+//		System.out.println("\nJSON Object: " + exchangeRatesforWritingToFile);
 		System.exit(0);
 	}
 	
@@ -216,12 +219,12 @@ public class ConservativeTrader {
 			}
 		}
 		if(Main.trade) {
-	    	for(LimitOrder order: limitOrderList1) {
-	    		if(order!=null) {
-	    			String orderReturnVal = tradeService.placeLimitOrder(order);
-	    			System.out.println("coinsToConvertToBTC Order Return Value: " + orderReturnVal);
-	    		}
-	    	}
+//	    	for(LimitOrder order: limitOrderList1) {
+//	    		if(order!=null) {
+//	    			String orderReturnVal = tradeService.placeLimitOrder(order);
+//	    			System.out.println("coinsToConvertToBTC Order Return Value: " + orderReturnVal);
+//	    		}
+//	    	}
 	    	for(LimitOrder order: limitOrderList2) {
 	    		if(order!=null) {
 	    			String orderReturnVal = tradeService.placeLimitOrder(order);
@@ -232,7 +235,6 @@ public class ConservativeTrader {
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
-
 		currenciesAndBalances.clear();
 		Thread.sleep(1000);
 	}
@@ -281,6 +283,9 @@ public class ConservativeTrader {
 	
 	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC){
 		boolean shouldTrade = filterSequence(sequence, amountBTC);
+		if(!shouldTrade) {
+			return shouldTrade;
+		}
 		List<LimitOrder> limitOrderList = new ArrayList<LimitOrder>();
 		double amt = 0;
 		double startingAmt = 0;
@@ -360,7 +365,7 @@ public class ConservativeTrader {
 					double amount = CurrencyConverter.convertCoinToBTC(v.name, wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()*ratio);
 					// first, we get the name of the currency with v.name. then we convert it to a new Currency so we can grab it from wallet. Then we convert the amount coin available		
 					// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
-					if(amount>0.002) {
+					if(amount>0.0017) {
 						Trade trade = new Trade(amount, key1, key2, "buy");
 						// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
 						convertCoinsToBTCList.add(trade.createLimitOrder());
@@ -371,7 +376,7 @@ public class ConservativeTrader {
 					double amount = wallet.getBalance(new Currency(v.name)).getAvailable().doubleValue()*ratio;
 					double amountBTC = CurrencyConverter.convertCoinToBTC(v.name, amount);
 					System.out.println("Equivalent BTC balance for " + v.name+ " :" + amountBTC);
-					if(amountBTC>0.0016) {
+					if(amountBTC>0.0017) {
 						Trade trade = new Trade(amount, key1, key2, "sell");
 						convertCoinsToBTCList.add(trade.createLimitOrder());
 					}
@@ -393,7 +398,7 @@ public class ConservativeTrader {
 	public void convertBTCToCoins(double amountBTC) throws IOException {
 		System.out.println("Converting " + amountBTC + " BTC to all availabe cryptocurrencies");
 		double btcPerCoin = amountBTC/(Main.vertices.size()-1);
-		ArrayList<MarketOrder> convertBTCToCoinsList = new ArrayList<MarketOrder>();
+		ArrayList<LimitOrder> convertBTCToCoinsList = new ArrayList<LimitOrder>();
 		for (Vertex v : Main.vertices) {
 			if(!v.name.toUpperCase().equals("BTC")) {
 				if(v.name.equals("USDT")) {
@@ -403,21 +408,21 @@ public class ConservativeTrader {
 					// in the wallet to equivalent amount of BTC using CurrencyConverter's convertCoinToBTC method. We then create a trade by creating a new trade with "buy" and pair.
 					Trade trade = new Trade(btcPerCoin, key1, key2, "sell");
 					// adding the trade to convertCoinToBTCList for execution by tradeService. We need to execute a list of market orders hence trade.createMarketOrder()
-					convertBTCToCoinsList.add(trade.createMarketOrderForExchanging());
+					convertBTCToCoinsList.add(trade.createLimitOrder());
 				} else {
 					String key1 = v.name;
 					String key2 = "BTC";
 					double amount = CurrencyConverter.convertBTCToCoin(v.name, btcPerCoin);
 					Trade trade = new Trade(amount, key1, key2, "buy");
-					convertBTCToCoinsList.add(trade.createMarketOrderForExchanging());
+					convertBTCToCoinsList.add(trade.createLimitOrder());
 				}
 			}
 		}
 		System.out.println("Converting to " + convertBTCToCoinsList.size() + " coins");
 		System.out.println(convertBTCToCoinsList);
 	    if(Main.trade) {
-	    	for(MarketOrder order: convertBTCToCoinsList) {
-	    		String orderReturnVal = tradeService.placeMarketOrder(order);
+	    	for(LimitOrder order: convertBTCToCoinsList) {
+	    		String orderReturnVal = tradeService.placeLimitOrder(order);
 	    		System.out.println("Market Order Return Value: " + orderReturnVal);
 	    	}
 	    } 

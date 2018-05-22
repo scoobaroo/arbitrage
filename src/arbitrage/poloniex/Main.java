@@ -1,4 +1,4 @@
-package binance;
+package poloniex;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -7,9 +7,9 @@ import java.math.BigDecimal;
 import java.util.*;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
-import org.knowm.xchange.binance.BinanceExchange;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
+import org.knowm.xchange.poloniex.PoloniexExchange;
 import org.knowm.xchange.currency.Currency;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -52,68 +52,8 @@ public class Main {
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
 		tickerArray = new org.json.JSONArray();
-        String csvFile = "BinanceTradingRule-Master.csv";
-        BufferedReader br = null;
-        String line = "";
-        try {
-            br = new BufferedReader(new FileReader(csvFile));
-            while ((line = br.readLine()) != null) {
-                String[] elements = line.split(",");
-                String symbol = elements[0].replace("/","");
-                sigDigs.put(symbol, Integer.valueOf(elements[1]));
-            }
-            System.out.println(sigDigs);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        String csvFile2 = "BinanceTradingRule-MinPrice.csv";
-        BufferedReader br2 = null;
-        String line2 = "";
-        try {
-            br2 = new BufferedReader(new FileReader(csvFile2));
-            while ((line2 = br2.readLine()) != null) {
-                String[] elements = line2.split(",");
-                String symbol = elements[0].replace("/","");
-                Integer sigDigit = Integer.valueOf(elements[2]);
-                sigDigsForPricing.put(symbol,sigDigit);
-            }
-            System.out.println(sigDigsForPricing);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (br2 != null) {
-                try {
-                    br2.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
 	}
 	
-//	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
-//	                                     "xmrbtc","dshusd","dshbtc","btceur","xrpusd","xrpbtc","iotusd","iotbtc","ioteth","eosusd","eosbtc","eoseth",
-//	                                     "sanusd","sanbtc","saneth","omgusd","omgbtc","omgeth","bchusd","bchbtc","bcheth","neousd","neobtc","neoeth",
-//	                                     "etpusd","etpbtc","etpeth","qtmusd","qtmbtc","qtmeth","avtusd","avtbtc","avteth","edousd","edobtc","edoeth",
-//	                                     "btgusd","btgbtc","datusd","datbtc","dateth","qshusd","qshbtc","qsheth","yywusd","yywbtc","yyweth","gntusd",
-//	                                     "gntbtc","gnteth","sntusd","sntbtc","snteth","ioteur","batusd","batbtc","bateth","mnausd","mnabtc","mnaeth",
-//	                                     "funusd","funbtc","funeth","zrxusd","zrxbtc","zrxeth","tnbusd","tnbbtc","tnbeth","spkusd","spkbtc","spketh",
-//	                                     "trxusd","trxbtc","trxeth","rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth",
-//	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
-//
-
 	public static void populateVertices(org.json.JSONArray list) {
 		Set<Vertex> vertexSet = new HashSet<Vertex>();
 		vertexMap = new HashMap<String,Vertex>();
@@ -245,9 +185,8 @@ public class Main {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
 		Main m = new Main();
-		Exchange binanceExchange = new BinanceExchange();
-		ConservativeTrader t = new ConservativeTrader(binanceExchange);
-//		Trader t = new Trader(binanceExchange);
+		Exchange poloniexExchange = new PoloniexExchange();
+		Trader t = new Trader(poloniexExchange);
 		Scanner reader = new Scanner(System.in);
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
 		int choice = Integer.valueOf(reader.next());
@@ -352,9 +291,8 @@ public class Main {
 			    // Resetting parameters for new api query
 			    clearAll();
 				try {
-					Thread.sleep((long) .0001);
+					Thread.sleep((long) 200);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}

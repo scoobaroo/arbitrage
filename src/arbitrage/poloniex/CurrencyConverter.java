@@ -1,4 +1,4 @@
-package binance;
+package poloniex;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
