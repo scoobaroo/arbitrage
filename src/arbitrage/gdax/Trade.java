@@ -1,4 +1,4 @@
-package poloniex;
+package gdax;
 import java.math.BigDecimal;
 
 import org.knowm.xchange.currency.CurrencyPair;

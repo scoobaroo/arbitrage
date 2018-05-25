@@ -81,11 +81,6 @@ public class ConservativeTrader {
 		info = service.getAccountInfo();
 	}
 	
-	public void printCurrentMarketValueOfOldBalances() throws FileNotFoundException {
-		calculateCurrentMarketValueOfOldBalances();
-		System.exit(0);
-	}
-
 	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
@@ -119,7 +114,7 @@ public class ConservativeTrader {
 		}
 		Gson gson = new Gson();
 		String balances = gson.toJson(currenciesAndCoinBalances);
-		FileWriter file = new FileWriter("balances.json");
+		FileWriter file = new FileWriter("balances524.json");
 		try {
 			file.write(balances);
 		}catch (Exception e) {
@@ -185,24 +180,26 @@ public class ConservativeTrader {
 		}
 		Vertex maxV = currenciesAndBalances.entrySet().stream().max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).get().getKey();
 		System.out.println("MAX CURRENCY: " + maxV + ", BALANCE: " + currenciesAndBalances.get(maxV) + "BTC");
-		for(Vertex v: coinsToConvertToBTC) {
-			if(!v.toString().equals("BTC")) {
-				double availableBTCBalance = currenciesAndBalances.get(v); 
-				System.out.println("Coin " +v.toString() + " is in coinsToConvertToBTC list.");			
-				if(v.toString().equals("USDT")) {
-					double amountInBTCToSell = availableBTCBalance - 0.002;
-					Trade trade = new Trade(amountInBTCToSell, "BTC", v.toString(), "buy");
-					limitOrderList1.add(trade.createLimitOrder());
-				} else {
-					if(!v.toString().equals("BNB") && !v.toString().equals("ETH")) {
-						double amountInBTCToSell = availableBTCBalance - 0.002;
-						double amountCoins = CurrencyConverter.convertBTCToCoin(v.toString(), amountInBTCToSell);
-						Trade trade = new Trade(amountCoins, v.toString(), "BTC", "sell");
-						limitOrderList1.add(trade.createLimitOrder());
-					}
-				}
-			}
-		}
+		//uncomment below lines to convert coins to BTC in this method
+//		for(Vertex v: coinsToConvertToBTC) {
+//			if(!v.toString().equals("BTC")) {
+//				double availableBTCBalance = currenciesAndBalances.get(v); 
+//				System.out.println("Coin " +v.toString() + " is in coinsToConvertToBTC list.");			
+//				if(v.toString().equals("USDT")) {
+//					double amountInBTCToSell = availableBTCBalance - 0.002;
+//					Trade trade = new Trade(amountInBTCToSell, "BTC", v.toString(), "buy");
+//					limitOrderList1.add(trade.createLimitOrder());
+//				} else {
+//					if(!v.toString().equals("BNB") && !v.toString().equals("ETH")) {
+//						double amountInBTCToSell = availableBTCBalance - 0.002;
+//						double amountCoins = CurrencyConverter.convertBTCToCoin(v.toString(), amountInBTCToSell);
+//						Trade trade = new Trade(amountCoins, v.toString(), "BTC", "sell");
+//						limitOrderList1.add(trade.createLimitOrder());
+//					}
+//				}
+//			}
+//		}
+		//end uncomment
 		for(Vertex v: coinsNeeded) {
 			double availableBTCBalance = currenciesAndBalances.get(v); 
 			System.out.println("Coin " +v.toString() + " is in coinsNeeded list.");

@@ -1,4 +1,4 @@
-package poloniex;
+package gdax;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

@@ -150,9 +150,9 @@ public class Main {
 				vertexSet.add(v1);
 				vertexSet.add(v2);
 				if(debug) System.out.println("vertexSet size: " + vertexSet.size());
-				vertices = new ArrayList<Vertex>(vertexSet);
 			}
 		}
+		vertices = new ArrayList<Vertex>(vertexSet);
 	}
 	
 	public static void getExchangeRates() throws UnirestException, InterruptedException {
@@ -218,7 +218,7 @@ public class Main {
 			}
 		}
 		for(Edge e: edgeMap.values()) {
-    			setOfEdges.add(e);
+			setOfEdges.add(e);
 		}
 		edges = new ArrayList<Edge>(setOfEdges);
 		if (debug) System.out.println("list length: " + list.length());
@@ -271,15 +271,10 @@ public class Main {
 			System.out.println("Would you like to equalize currencies for trading? Enter ANY NUMBER for no, 666 for yes");
 			int choiceToEqualize = Integer.valueOf(reader.next());
 			if(choiceToEqualize==666) {
-				try {
-					getExchangeRates();
-					int bcdIndex = Main.vertices.indexOf(findVertex("BCD"));
-					Main.vertices.remove(bcdIndex);
-					t.getBalancesAndEqualize(0.0018, 0.0036);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				getExchangeRates();
+//				int bcdIndex = Main.vertices.indexOf(findVertex("BCD"));
+//				Main.vertices.remove(bcdIndex);
+				t.getBalancesAndEqualize(0.0018, 0.0036);
 			}
 			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
 			String baseAmountBTCString = reader.next();
@@ -352,7 +347,7 @@ public class Main {
 			    // Resetting parameters for new api query
 			    clearAll();
 				try {
-					Thread.sleep((long) .0001);
+					Thread.sleep((long) .001);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
