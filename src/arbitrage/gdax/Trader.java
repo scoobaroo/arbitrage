@@ -17,12 +17,10 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.MarketOrder;
-import org.knowm.xchange.poloniex.PoloniexExchange;
+import org.knowm.xchange.gdax.GDAXExchange;
 import org.knowm.xchange.service.account.AccountService;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.knowm.xchange.service.trade.TradeService;
@@ -42,14 +40,13 @@ public class Trader {
 		this.exchange = exchange;
 		Properties prop = new Properties();
 		InputStream input = null;
-		String apiKey = "", apiSecret = "";
+		String apiKey = "", apiSecret = "", passphrase = "";
 		try {
-			input = new FileInputStream("/Users/suejanehan/workspace/poloniexConfig.properties");
+			input = new FileInputStream("/Users/suejanehan/workspace/gdaxConfig.properties");
 			prop.load(input);
-//			System.out.println(prop.getProperty("apiKey"));
-//			System.out.println(prop.getProperty("apiSecret"));
 			apiKey = prop.getProperty("apiKey");
 			apiSecret = prop.getProperty("apiSecret");
+			passphrase = prop.getProperty("passphrase");
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		} finally {
@@ -61,14 +58,15 @@ public class Trader {
 				}
 			}
 		}
-		ExchangeSpecification exSpec = new PoloniexExchange().getDefaultExchangeSpecification();
-		exSpec.setUserName("mild.7.eric@gmail.com");
+		ExchangeSpecification exSpec = new GDAXExchange().getDefaultExchangeSpecification();
+		exSpec.setUserName("eric.han@sjsu.edu");
 		exSpec.setApiKey(apiKey);
 		exSpec.setSecretKey(apiSecret);
-		Exchange poloniex = ExchangeFactory.INSTANCE.createExchange(exSpec);
-		tradeService = poloniex.getTradeService();
-		marketDataService = poloniex.getMarketDataService();
-		service = poloniex.getAccountService();
+		exSpec.setExchangeSpecificParametersItem("passphrase", passphrase);
+		Exchange gdax = ExchangeFactory.INSTANCE.createExchange(exSpec);
+		tradeService = gdax.getTradeService();
+		marketDataService = gdax.getMarketDataService();
+		service = gdax.getAccountService();
 		info = service.getAccountInfo();
 	}
 	
@@ -284,6 +282,7 @@ public class Trader {
 		double amt = 0;
 		double startingAmt = 0;
 		double oldAmt = 0;
+		sequence.add(sequence.get(0));
 		System.out.println(sequence);
 	    for(int i = 0; i< sequence.size()-1 ; i++) {
     		String key1;

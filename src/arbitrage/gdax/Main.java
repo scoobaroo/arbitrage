@@ -9,24 +9,31 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import org.json.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
-import org.knowm.xchange.poloniex.PoloniexExchange;
-import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.gdax.GDAXExchange;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.knowm.xchange.currency.CurrencyPair;
+
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-import rx.functions.Action1;
-import ws.wamp.jawampa.WampClient;
-import ws.wamp.jawampa.WampClientBuilder;
-import ws.wamp.jawampa.connection.IWampConnectorProvider;
+import info.bitrich.xchangestream.core.ProductSubscription;
+import info.bitrich.xchangestream.core.StreamingExchange;
+import info.bitrich.xchangestream.core.StreamingExchangeFactory;
+import info.bitrich.xchangestream.gdax.GDAXStreamingExchange;
 
 
 public class Main {
+	static int count = 0;
+	static int unexecutedCount = 0;
 	static boolean debug = false;
 	static boolean trade = true;
 	protected static LinkedHashMap<String,Integer> sigDigs;
@@ -61,116 +68,114 @@ public class Main {
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
 		tickerArray = new org.json.JSONArray();
+		String csvFile = "GDAXAmounts.csv";
+        BufferedReader br = null;
+        String line = "";
+        try {
+            br = new BufferedReader(new FileReader(csvFile));
+            while ((line = br.readLine()) != null) {
+                String[] elements = line.split(",");
+                String symbol = elements[0].replace("/","");
+                sigDigs.put(symbol, Integer.valueOf(elements[1]));
+            }
+            System.out.println(sigDigs);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        String csvFile2 = "GDAXPricing.csv";
+        BufferedReader br2 = null;
+        String line2 = "";
+        try {
+            br2 = new BufferedReader(new FileReader(csvFile2));
+            while ((line2 = br2.readLine()) != null) {
+                String[] elements = line2.split(",");
+                String symbol = elements[0].replace("/","");
+                Integer sigDigit = Integer.valueOf(elements[1]);
+                sigDigsForPricing.put(symbol,sigDigit);
+            }
+            System.out.println(sigDigsForPricing);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br2 != null) {
+                try {
+                    br2.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 	}
 	
-	public static void populateVertices(org.json.JSONArray list) {
-		Set<Vertex> vertexSet = new HashSet<Vertex>();
-		vertexMap = new HashMap<String,Vertex>();
-		for(Object o : list) {
-			String key1= "", key2 = "";
-			org.json.JSONObject obj = (org.json.JSONObject) o;
-			String pair = (String) obj.get("symbol");
-			if(!pair.equals("123456")) {
-				if (pair.length() == 5) {
-					key1 = pair.substring(0,2);
-					key2 = pair.substring(2,5);
-				} else if(pair.length() == 6) {
-					key1 = pair.substring(0,3);
-					key2 = pair.substring(3,6);
-				} else if (pair.length() == 7) {
-					if(pair.substring(3,7).equals("USDT")) {
-						key1 = pair.substring(0,3);
-						key2 = pair.substring(3,7);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,7);
-					}
-				} else if (pair.length() == 8) {
-					if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH") || pair.substring(5,8).equals("BNB")){
-						key1 = pair.substring(0,5);
-						key2 = pair.substring(5,8);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,8);
-					}
-				}
-				Vertex v1 = new Vertex(key1.toUpperCase());
-				Vertex v2 = new Vertex(key2.toUpperCase());
-				vertexSet.add(v1);
-				vertexSet.add(v2);
-				if(debug) System.out.println("vertexSet size: " + vertexSet.size());
-				vertices = new ArrayList<Vertex>(vertexSet);
-			}
-		}
-	}
-	
-	public static void getExchangeRates() throws UnirestException, InterruptedException {
-		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.binance.com/api/v3/ticker/bookTicker").asJson();
+	public static void getExchangeRates(String productId) throws UnirestException {
+		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.gdax.com/products/"+productId+"/ticker").asJson();
 		org.json.JSONArray list = jsonResponse.getBody().getArray();
+		System.out.println(productId);
+		System.out.println(list);
+		JSONObject obj = list.getJSONObject(0);
+		String [] currencies = productId.split("-");
+		String key1 = currencies[0];
+		String key2 = currencies[1];
+		Vertex v1 = findVertex(key1);
+		Vertex v2 = findVertex(key2);
+		String pair = key1 + key2;
+		String pairReversed = key2 + key1;
+		if(debug) System.out.println("key1: "+key1 +" key2: "+key2);
+		double bid = Double.valueOf((String) obj.get("bid"));
+		double ask = Double.valueOf((String) obj.get("ask"));
+		edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid), bid));
+		edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
+		exchangeRates.put(pair.toUpperCase(), bid);
+		exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
+		double price = Double.valueOf((String) obj.get("price"));
+		double mid = (bid + ask) / 2;
+		exchangeRatesMid.put(pair, mid);
+		exchangeRatesMid.put(pairReversed, 1/mid);
+		exchangePrices.put(pair.toUpperCase(), bid);
+		exchangePrices.put(pairReversed.toUpperCase(), ask);
+		for(Edge e: edgeMap.values()) {
+			setOfEdges.add(e);
+		}
+		edges = new ArrayList<Edge>(setOfEdges);
+		if (debug) System.out.println("list length: " + list.length());
+	}
+	
+	public static void getProducts() throws UnirestException, InterruptedException {
+		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.gdax.com/products").asJson();
+		org.json.JSONArray list = jsonResponse.getBody().getArray();
+		System.out.println(list);
 		if(debug==true) {
 			System.out.println(list);
 			System.out.println(list.length());
 		}
-		populateVertices(list);
 		for(Object o : list) {
-			String key1= "", key2 = "";
 			org.json.JSONObject obj = (org.json.JSONObject) o;
-			String pair = (String) obj.get("symbol");
-			symbols.add(pair);
-			if (!pair.equals("123456")) {
-				if (pair.length() == 5) {
-					key1 = pair.substring(0,2);
-					key2 = pair.substring(2,5);
-				} else if(pair.length() == 6) {
-					key1 = pair.substring(0,3);
-					key2 = pair.substring(3,6);
-				} else if (pair.length() == 7) {
-					if(pair.substring(3,7).equals("USDT")) {
-						key1 = pair.substring(0,3);
-						key2 = pair.substring(3,7);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,7);
-					}
-				} else if (pair.length() == 8) {
-					if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH") || pair.substring(5,8).equals("BNB")){
-						key1 = pair.substring(0,5);
-						key2 = pair.substring(5,8);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,8);
-					}
-				}
-				Vertex v1 = findVertex(key1);
-				Vertex v2 = findVertex(key2);
-				String pairReversed = key2 + key1;
-				if(debug) System.out.println("key1: "+key1 +" key2: "+key2);
-				double bid = Double.valueOf((String) obj.get("bidPrice"));
-				double ask = Double.valueOf((String) obj.get("askPrice"));
-				double bidSize = Double.valueOf((String) obj.get("bidQty"));
-				double askSize = Double.valueOf((String) obj.get("askQty"));
-				edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid), bid));
-				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
-				exchangeRates.put(pair.toUpperCase(), bid);
-				exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
-				
-				// code for finding midpoint between the bid and ask
-				double mid = (bid + ask) / 2;
-				exchangeRatesMid.put(pair, mid);
-				exchangeRatesMid.put(pairReversed, 1/mid);
-				// end midpoint code
-				
-				exchangePrices.put(pair.toUpperCase(), bid);
-				exchangePrices.put(pairReversed.toUpperCase(), ask);
-				transactionAmounts.put(pair, bidSize);
-				transactionAmounts.put(pairReversed, askSize);
-			}
+			String pair = (String) obj.get("id");
+			symbols.add(pair.replace("-", ""));
+			String[] symbol = pair.split("-");
+			Vertex v1 = new Vertex(symbol[0]);
+			Vertex v2 = new Vertex(symbol[1]);
+			Main.setOfVertices.add(v1);
+			Main.setOfVertices.add(v2);
 		}
-		for(Edge e: edgeMap.values()) {
-    			setOfEdges.add(e);
+		Main.vertices = new ArrayList<Vertex>(setOfVertices);
+		for(Object o : list) {
+			org.json.JSONObject obj = (org.json.JSONObject) o;
+			String pair = (String) obj.get("id");
+			getExchangeRates(pair);
 		}
-		edges = new ArrayList<Edge>(setOfEdges);
-		if (debug) System.out.println("list length: " + list.length());
 	}
 	
     public static Vertex findVertex(String name) {
@@ -191,43 +196,162 @@ public class Main {
 	    Main.vertices.clear();
     }
     
+    public static void populateExchangeRate(Ticker ticker) {
+        CurrencyPair pair = ticker.getCurrencyPair();
+        String pairString = pair.toString();
+        BigDecimal ask = ticker.getAsk();
+        BigDecimal bid = ticker.getBid();
+        System.out.println("Pair: " + pair);
+        System.out.println("Ask: " + ask);
+        System.out.println("Bid: " + bid);
+        updateEdgesForPair(pairString, bid, ask);
+    }
+    
+    public static void updateEdgesForPair(String name, BigDecimal bid, BigDecimal ask) {
+    	System.out.println("We are updating edges for:" + name);
+    	String[] array = name.split("/");
+    	String key1 = array[0];
+    	String key2 = array[1];
+    	Vertex v1 = findVertex(key1);
+    	Vertex v2 = findVertex(key2);
+    	String forwardPair = key1 + key2;
+    	String reversedPair = key2 + key1;
+//		Edge forwardEdge = edgeMap.get(forwardPair);
+//		Edge reversedEdge = edgeMap.get(reversedPair);
+		edgeMap.put(forwardPair, new Edge(v1,v2,-Math.log(bid.doubleValue()), bid.doubleValue()));
+		edgeMap.put(reversedPair, new Edge(v2,v1, Math.log(ask.doubleValue()), 1/ask.doubleValue()));
+		exchangeRates.put(forwardPair.toUpperCase(), bid.doubleValue());
+		exchangeRates.put(reversedPair.toUpperCase(), 1/ask.doubleValue());
+		exchangePrices.put(forwardPair.toUpperCase(), bid.doubleValue());
+		exchangePrices.put(reversedPair.toUpperCase(), ask.doubleValue());
+		for(Edge e: edgeMap.values()) {
+			setOfEdges.add(e);
+		}
+		edges = new ArrayList<Edge>(setOfEdges);
+    }
+    
+    public static void doBellmanFord(Trader t) throws IOException, InterruptedException {
+    	Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+	    g.BellmanFord(g, g.v0);
+	    ArrayList<Vertex> sequenceNew = g.bestCycle;
+	    System.out.println(sequenceNew);
+	    if((1.001)<g.maxRatio) {
+		boolean tradeBool = t.executeTradeSequenceWithList(sequenceNew, 0.002);
+		if(Main.trade) {
+			if(tradeBool) count++;
+			else unexecutedCount++;
+		} 
+		}
+    }
+    
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException, URISyntaxException{
 		Main m = new Main();
-		Exchange poloniexExchange = new PoloniexExchange();
-		Trader t = new Trader(poloniexExchange);
-	    final WampClient client;
-	    try {
-	        WampClientBuilder builder = new WampClientBuilder();
-//	        IWampConnectorProvider connectorProvider = new NettyWampClientConnectorProvider();
-//	        builder.withConnectorProvider(connectorProvider)
-	        builder.withUri("wss://api.poloniex.com")
-	                .withRealm("realm1")
-	                .withInfiniteReconnects()
-	                .withReconnectInterval(5, TimeUnit.SECONDS);
-	        client = builder.build();
-	    } catch (Exception e) {
-	        return;
-	    }
-	    client.statusChanged().subscribe(new Action1<WampClient.State>() {
-	        @Override
-	        public void call(WampClient.State t1) {
-	            if (t1 instanceof WampClient.ConnectedState) {
-	                client.makeSubscription("trollbox")
-                        .subscribe((s) -> { 
-                        	System.out.println(s.arguments());
-                			System.out.println(s.details());
-                        });
-	                client.makeSubscription("ticker").
-		                subscribe((s) -> { 
-	                    	System.out.println(s.arguments());
-	            			System.out.println(s.details());
-	                    });
-	            }
-	        }
-	    });
+		Logger LOG = LoggerFactory.getLogger(Main.class);
+		Exchange gdaxExchange = new GDAXExchange();
+		Trader t = new Trader(gdaxExchange);
+		getProducts();
+		Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+		Vertex src = g.v0;
+	    g.BellmanFord(g, src);
+	    ArrayList<Vertex> sequence = g.bestCycle;
+	    System.out.println(sequence);
+	    System.out.println("Main.symbols:");
+	    System.out.println(Main.symbols);
+	    System.out.println("Main.vertices:");
+	    System.out.println(Main.vertices);
+	    System.out.println("Main.edges:");
+	    System.out.println(Main.edges);
+        ProductSubscription productSubscription = ProductSubscription.create().addTicker(CurrencyPair.BTC_USD)
+                .addTicker(CurrencyPair.BTC_EUR).addTicker(CurrencyPair.ETH_USD).addTicker(CurrencyPair.BCH_BTC)
+                .addTicker(CurrencyPair.BCH_USD).addTicker(CurrencyPair.BTC_GBP).addTicker(CurrencyPair.ETH_BTC)
+                .addTicker(CurrencyPair.ETH_EUR).addTicker(CurrencyPair.LTC_BTC).addTicker(CurrencyPair.LTC_EUR)
+                .addTicker(CurrencyPair.LTC_USD).addTicker(CurrencyPair.BCH_EUR).build();
+        StreamingExchange exchange = StreamingExchangeFactory.INSTANCE.createExchange(GDAXStreamingExchange.class.getName());
+        exchange.connect(productSubscription).blockingAwait();
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.BTC_USD).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+    	    doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.BTC_GBP).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.BTC_EUR).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.BCH_BTC).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.BCH_USD).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.BCH_EUR).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.ETH_USD).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.ETH_BTC).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.ETH_EUR).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.LTC_BTC).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.LTC_EUR).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
+        exchange.getStreamingMarketDataService().getTicker(CurrencyPair.LTC_USD).subscribe(ticker -> {
+            System.out.println(ticker);
+            populateExchangeRate(ticker);
+            doBellmanFord(t);
+        }, throwable -> LOG.error("ERROR in getting ticker: ", throwable));
 	}
 }
+		// Disconnect from exchange (non-blocking)
+//		exchange.disconnect().subscribe(() -> System.out.println("Disconnected from the Exchange"));
+		
+		
+//	    while(true) {
+//	    	getProducts();
+//			System.out.println(Main.symbols);
+//			System.out.println(Main.vertices);
+//			System.out.println(Main.edges);
+//			Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+//		    if (debug) {System.out.println(Main.symbols);}
+//			Vertex src = g.v0;
+//		    g.BellmanFord(g, src);
+//		    ArrayList<Vertex> sequence = g.bestCycle;
+//		    System.out.println(sequence);
+//			try {
+//				Thread.sleep((long) 10000);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//	    }
 //	    });
 //		Scanner reader = new Scanner(System.in);
 //		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");

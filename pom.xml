@@ -4,6 +4,23 @@
   <artifactId>arbitrage</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <dependencies>
+<!-- https://mvnrepository.com/artifact/info.bitrich.xchange-stream/xchange-stream-core -->
+<dependency>
+    <groupId>info.bitrich.xchange-stream</groupId>
+    <artifactId>xchange-stream-core</artifactId>
+    <version>4.3.2</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.knowm.xchange/xchange-gdax -->
+<dependency>
+    <groupId>org.knowm.xchange</groupId>
+    <artifactId>xchange-gdax</artifactId>
+    <version>4.3.6</version>
+</dependency>
+<dependency>
+    <groupId>info.bitrich.xchange-stream</groupId>
+    <artifactId>xchange-gdax</artifactId>
+    <version>4.3.2</version>
+</dependency>
 	<dependency>
 	    <groupId>ws.wamp.jawampa</groupId>
 	    <artifactId>jawampa-core</artifactId>
