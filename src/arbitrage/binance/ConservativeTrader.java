@@ -84,7 +84,7 @@ public class ConservativeTrader {
 	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
-		JsonReader reader = new JsonReader(new FileReader("balances.json"));
+		JsonReader reader = new JsonReader(new FileReader("balances61.json"));
 		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
 //		System.out.println(balances);
 		double BTCValue = 0;
@@ -114,7 +114,7 @@ public class ConservativeTrader {
 		}
 		Gson gson = new Gson();
 		String balances = gson.toJson(currenciesAndCoinBalances);
-		FileWriter file = new FileWriter("balances524.json");
+		FileWriter file = new FileWriter("balances61.json");
 		try {
 			file.write(balances);
 		}catch (Exception e) {
