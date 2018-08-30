@@ -233,6 +233,10 @@ public class Trader {
 //		}
 		//end uncomment
 		for(Vertex v: coinsNeeded) {
+			System.out.println(v.toString());
+		}
+		System.out.println("HELLO");
+		for(Vertex v: coinsNeeded) {
 			double availableBTCBalance = currenciesAndBalances.get(v); 
 			System.out.println("Coin " +v.toString() + " is in coinsNeeded list.");
 			if(!v.toString().equals("BTC")) {

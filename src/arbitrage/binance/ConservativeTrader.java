@@ -10,12 +10,15 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Map.Entry;
 
 import org.json.simple.JSONObject;
@@ -81,10 +84,10 @@ public class ConservativeTrader {
 		info = service.getAccountInfo();
 	}
 	
-	public void calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
+	public String calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
 		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 		Gson gson = new Gson();
-		JsonReader reader = new JsonReader(new FileReader("balances61.json"));
+		JsonReader reader = new JsonReader(new FileReader("balances829.json"));
 		HashMap<String,Double> balances = gson.fromJson(reader, TOKEN_TYPE); // contains the whole reviews list
 //		System.out.println(balances);
 		double BTCValue = 0;
@@ -102,7 +105,9 @@ public class ConservativeTrader {
 			BTCValue+=btcValueForCoin;
 		}
 		double USDValue = BTCValue * Main.exchangeRatesMid.get("BTCUSDT");
-		System.out.println("Total Bitcoin Value (without using bot): " + BTCValue + ", USD Value Equivalent: "+ USDValue);
+		String result = "Total Bitcoin Value (without using bot): " + BTCValue + ", USD Value Equivalent: "+ USDValue;
+		System.out.println(result);
+		return result;
 	}
 	
 	public void getAccountSnapshot() throws IOException, InterruptedException {
@@ -114,7 +119,7 @@ public class ConservativeTrader {
 		}
 		Gson gson = new Gson();
 		String balances = gson.toJson(currenciesAndCoinBalances);
-		FileWriter file = new FileWriter("balances61.json");
+		FileWriter file = new FileWriter("balances829.json");
 		try {
 			file.write(balances);
 		}catch (Exception e) {
@@ -160,8 +165,8 @@ public class ConservativeTrader {
 	public void getBalancesAndEqualize(double belowThreshold, double aboveThreshold) throws IOException, InterruptedException {
 		Wallet wallet = info.getWallet();
 		HashMap<Vertex, Double> currenciesAndBalances = new LinkedHashMap<Vertex,Double>();
-		ArrayList<Vertex> coinsToConvertToBTC = new ArrayList<Vertex>();
-		ArrayList<Vertex> coinsNeeded = new ArrayList<Vertex>();
+		CopyOnWriteArrayList<Vertex> coinsToConvertToBTC = new CopyOnWriteArrayList<Vertex>();
+		CopyOnWriteArrayList<Vertex> coinsNeeded = new CopyOnWriteArrayList<Vertex>();
 		List<LimitOrder> limitOrderList1 = new ArrayList<LimitOrder>();
 		List<LimitOrder> limitOrderList2 = new ArrayList<LimitOrder>();
 		for (Vertex v : Main.vertices) {
@@ -200,19 +205,31 @@ public class ConservativeTrader {
 //			}
 //		}
 		//end uncomment
+		ArrayList<Vertex> coinsNeededFiltered = new ArrayList<Vertex>();
 		for(Vertex v: coinsNeeded) {
-			double availableBTCBalance = currenciesAndBalances.get(v); 
-			System.out.println("Coin " +v.toString() + " is in coinsNeeded list.");
-			if(!v.toString().equals("BTC")) {
-				double amount = 0.002;
-				if(v.toString().equals("USDT")) {
-					Trade trade = new Trade(amount, "BTC", v.toString(), "sell");
-					limitOrderList2.add(trade.createLimitOrder());
-				} else {
-					double amountCoin = CurrencyConverter.convertBTCToCoin(v.toString(), amount);
-					Trade trade = new Trade(amountCoin, v.toString(), "BTC", "buy");
-					limitOrderList2.add(trade.createLimitOrder());
+			if( !(Main.sigDigs.get(v.toString()+"BTC")==0 )) {
+				coinsNeededFiltered.add(v);
+			}
+		}
+		int coinsConvertedTo = 0;
+		for(Vertex v: coinsNeededFiltered) {
+			if( !(v.toString().equals("HSR") || v.toString().equals("VEN") || v.toString().equals("GAS")) ) {
+				System.out.println("Coin " +v.toString() + " is in coinsNeededFiltered list.");
+				String coin = "ETH"; // make to BTC if we are using BTC to convert to altcoins
+				if(!v.toString().equals(coin)) { 
+					double amount = 0.1;
+					if(v.toString().equals("USDT")) {
+						Trade trade = new Trade(amount, coin, v.toString(), "sell");
+						limitOrderList2.add(trade.createLimitOrder());
+					} else {
+						System.out.println(Main.exchangeRates.get(coin+v.toString()));
+						double amountCoin = CurrencyConverter.convertCoinToCoin(coin, v.toString(), amount);
+						System.out.println("amountCoin:" + amountCoin);
+						Trade trade = new Trade(amountCoin, v.toString(), coin, "buy");
+						limitOrderList2.add(trade.createLimitOrder());
+					}
 				}
+				coinsConvertedTo++;
 			}
 		}
 		if(Main.trade) {
@@ -229,6 +246,7 @@ public class ConservativeTrader {
 	    		}
 	    	}
 		}
+		System.out.println("Number of coins we converted to with ETH: "+ coinsConvertedTo);
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
 		System.out.println("EQUALIZING!!!");
@@ -251,34 +269,38 @@ public class ConservativeTrader {
 	}
 	
 	public boolean filterSequence(List<Vertex> sequence, double amountBTC) {
-		sequence.add(sequence.get(0));
-		System.out.println(sequence);
-		for(int i = 0; i< sequence.size()-1 ; i++) {
-    		String key1;
-    		String key2;
-    		String symbol;
-			key1 = sequence.get(i).toString().toUpperCase();
-    		key2 = sequence.get(i+1).toString().toUpperCase();
-    		symbol = key1+key2;
-    		int sigDig = 999;
-    		if(Main.sigDigs.containsKey(symbol)) {
-    			sigDig = Main.sigDigs.get(symbol);
-    			System.out.println(symbol + " got sigDig of " + sigDig);
-    		} else{
-    			symbol = key2 + key1;
-    			sigDig = Main.sigDigs.get(symbol);
-    			System.out.println(symbol + " got sigDig of " + sigDig);
-    		};
-    		if(sigDig==0) {
-        		symbol = key1+key2;
-    			System.out.println("we are filtering out " +symbol + " because its sigDig==0");
-    			return false;
-    		}
+		if(!sequence.get(0).toString().equals("BTC")) {
+			return false;
+		} else {
+			sequence.add(sequence.get(0));
+			System.out.println(sequence);
+			for(int i = 0; i< sequence.size()-1 ; i++) {
+	    		String key1;
+	    		String key2;
+	    		String symbol;
+				key1 = sequence.get(i).toString().toUpperCase();
+	    		key2 = sequence.get(i+1).toString().toUpperCase();
+	    		symbol = key1+key2;
+	    		int sigDig = 999;
+	    		if(Main.sigDigs.containsKey(symbol)) {
+	    			sigDig = Main.sigDigs.get(symbol);
+	    			System.out.println(symbol + " got sigDig of " + sigDig);
+	    		} else{
+	    			symbol = key2 + key1;
+	    			sigDig = Main.sigDigs.get(symbol);
+	    			System.out.println(symbol + " got sigDig of " + sigDig);
+	    		};
+	    		if(sigDig==0 ) {    //*|| sigDig ==2 //*) {
+	        		symbol = key1+key2;
+	    			System.out.println("we are filtering out " +symbol + " because its sigDig==0 or sigDig==2");
+	    			return false;
+	    		}
+			}
+			return true;
 		}
-		return true;
 	}
 	
-	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC){
+	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC) throws FileNotFoundException{
 		boolean shouldTrade = filterSequence(sequence, amountBTC);
 		if(!shouldTrade) {
 			return shouldTrade;
@@ -348,6 +370,20 @@ public class ConservativeTrader {
 	    		}
 	    	}
 	    };
+	    Wallet wallet = info.getWallet();
+	    BigDecimal BTCbalance = wallet.getBalance(new Currency("BTC")).getTotal();
+		String sequenceString = "";
+		for(Vertex v: sequence) {
+			sequenceString+= v.toString() + "  ";
+		}    
+		String CSV_FILE_PATH = "./result.csv";
+		System.out.println(sequenceString);
+	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
+		LocalDateTime now = LocalDateTime.now();  
+		String dateTime = dtf.format(now).toString();
+		String marketValueOldBalances = calculateCurrentMarketValueOfOldBalances();
+		String[] data = {dateTime, sequenceString, BTCbalance.toString(), marketValueOldBalances, String.valueOf(Main.buffer), "BINANCE" };
+		Utilities.addDataToCSV(CSV_FILE_PATH, data);
 	    return shouldTrade;
 	}
 	

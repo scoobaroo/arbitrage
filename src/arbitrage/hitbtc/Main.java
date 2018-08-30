@@ -1,16 +1,30 @@
-package binance;
+package hitbtc;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeFactory;
+import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.binance.BinanceExchange;
+import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
+import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
+import org.knowm.xchange.dto.meta.ExchangeMetaData;
+import org.knowm.xchange.hitbtc.v2.HitbtcExchange;
+import org.knowm.xchange.service.account.AccountService;
+import org.knowm.xchange.service.marketdata.MarketDataService;
+import org.knowm.xchange.service.marketdata.params.Params;
 import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.currency.CurrencyPair;
+
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
@@ -20,7 +34,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = true;
-	static int buffer = 2;
+	static int buffer = 3;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected static ArrayList<Vertex> vertices;
@@ -103,114 +117,16 @@ public class Main {
 //	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
 //
 
-	public static void populateVertices(org.json.JSONArray list) {
-		Set<Vertex> vertexSet = new HashSet<Vertex>();
-		vertexMap = new HashMap<String,Vertex>();
-		for(Object o : list) {
-			String key1= "", key2 = "";
-			org.json.JSONObject obj = (org.json.JSONObject) o;
-			String pair = (String) obj.get("symbol");
-			if(!pair.equals("123456")) {
-				if (pair.length() == 5) {
-					key1 = pair.substring(0,2);
-					key2 = pair.substring(2,5);
-				} else if(pair.length() == 6) {
-					key1 = pair.substring(0,3);
-					key2 = pair.substring(3,6);
-				} else if (pair.length() == 7) {
-					if(pair.substring(3,7).equals("USDT")) {
-						key1 = pair.substring(0,3);
-						key2 = pair.substring(3,7);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,7);
-					}
-				} else if (pair.length() == 8) {
-					if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH") || pair.substring(5,8).equals("BNB")){
-						key1 = pair.substring(0,5);
-						key2 = pair.substring(5,8);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,8);
-					}
-				}
-				Vertex v1 = new Vertex(key1.toUpperCase());
-				Vertex v2 = new Vertex(key2.toUpperCase());
-				vertexSet.add(v1);
-				vertexSet.add(v2);
-				if(debug) System.out.println("vertexSet size: " + vertexSet.size());
-			}
-		}
-		vertices = new ArrayList<Vertex>(vertexSet);
-	}
-	
-	public static void getExchangeRates() throws UnirestException, InterruptedException {
-		HttpResponse<JsonNode> jsonResponse = Unirest.get("https://api.binance.com/api/v3/ticker/bookTicker").asJson();
-		org.json.JSONArray list = jsonResponse.getBody().getArray();
-		System.out.println(list);
-		System.out.println(list.length());
-		if(debug==true) {
-			System.out.println(list);
-			System.out.println(list.length());
-		}
-		populateVertices(list);
-		for(Object o : list) {
-			String key1= "", key2 = "";
-			org.json.JSONObject obj = (org.json.JSONObject) o;
-			String pair = (String) obj.get("symbol");
-			symbols.add(pair);
-			if (!pair.equals("123456")) {
-				if (pair.length() == 5) {
-					key1 = pair.substring(0,2);
-					key2 = pair.substring(2,5);
-				} else if(pair.length() == 6) {
-					key1 = pair.substring(0,3);
-					key2 = pair.substring(3,6);
-				} else if (pair.length() == 7) {
-					if(pair.substring(3,7).equals("USDT")) {
-						key1 = pair.substring(0,3);
-						key2 = pair.substring(3,7);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,7);
-					}
-				} else if (pair.length() == 8) {
-					if(pair.substring(5,8).equals("BTC") || pair.substring(5,8).equals("ETH") || pair.substring(5,8).equals("BNB")){
-						key1 = pair.substring(0,5);
-						key2 = pair.substring(5,8);
-					} else {
-						key1 = pair.substring(0,4);
-						key2 = pair.substring(4,8);
-					}
-				}
-				Vertex v1 = findVertex(key1);
-				Vertex v2 = findVertex(key2);
-				String pairReversed = key2 + key1;
-				if(debug) System.out.println("key1: "+key1 +" key2: "+key2);
-				double bid = Double.valueOf((String) obj.get("bidPrice"));
-				double ask = Double.valueOf((String) obj.get("askPrice"));
-				double bidSize = Double.valueOf((String) obj.get("bidQty"));
-				double askSize = Double.valueOf((String) obj.get("askQty"));
-				edgeMap.put(pair, new Edge(v1,v2,-Math.log(bid), bid));
-				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
-				exchangeRates.put(pair.toUpperCase(), bid);
-				exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
-				// code for finding midpoint between the bid and ask
-				double mid = (bid + ask) / 2;
-				exchangeRatesMid.put(pair, mid);
-				exchangeRatesMid.put(pairReversed, 1/mid);
-				// end midpoint code
-				exchangePrices.put(pair.toUpperCase(), bid);
-				exchangePrices.put(pairReversed.toUpperCase(), ask);
-				transactionAmounts.put(pair, bidSize);
-				transactionAmounts.put(pairReversed, askSize);
-			}
-		}
-		for(Edge e: edgeMap.values()) {
-			setOfEdges.add(e);
-		}
-		edges = new ArrayList<Edge>(setOfEdges);
-		if (debug) System.out.println("list length: " + list.length());
+	public static void getExchangeRates(MarketDataService marketDataService, ExchangeMetaData metaData, List<CurrencyPair> symbols) throws UnirestException, InterruptedException, IOException {
+		Map<CurrencyPair, CurrencyPairMetaData> pairs = metaData.getCurrencyPairs();
+		System.out.println(symbols);
+		List<Ticker> tickers = marketDataService.getTickers((Params) symbols);
+		System.out.println(tickers);
+//		for(CurrencyPair sym:s) {
+//			Ticker ticker = marketDataService.getTicker(sym);
+//			System.out.println(ticker);
+//		}
+
 	}
 	
     public static Vertex findVertex(String name) {
@@ -234,14 +150,39 @@ public class Main {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
 		Main m = new Main();
-		Exchange binanceExchange = new BinanceExchange();
-		ConservativeTrader t = new ConservativeTrader(binanceExchange);
-//		Trader t = new Trader(binanceExchange);
+		Properties prop = new Properties();
+		InputStream input = null;
+		String apiKey = "", apiSecret = "", email ="";
+		try {
+			input = new FileInputStream("/Users/suejanehan/workspace/hitbtcConfig.properties");
+			prop.load(input);
+//			System.out.println(prop.getProperty("apiKey"));
+//			System.out.println(prop.getProperty("apiSecret"));
+			email = prop.getProperty("email");
+			apiKey = prop.getProperty("apiKey");
+			apiSecret = prop.getProperty("apiSecret");
+		} catch (IOException ex) { ex.printStackTrace(); } finally {
+			if (input != null) {
+				try { input.close(); } catch (IOException e) { e.printStackTrace(); }
+			}
+		}
+		ExchangeSpecification exSpec = new HitbtcExchange().getDefaultExchangeSpecification();
+		exSpec.setUserName(email);
+		exSpec.setApiKey(apiKey);
+		exSpec.setSecretKey(apiSecret);
+		Exchange hitbtc = ExchangeFactory.INSTANCE.createExchange(exSpec);
+		MarketDataService marketDataService = hitbtc.getMarketDataService();
+		ExchangeMetaData metaData = hitbtc.getExchangeMetaData();
+		List<CurrencyPair> symbols = hitbtc.getExchangeSymbols();
+		getExchangeRates(marketDataService, metaData, symbols);
+		AccountService service = hitbtc.getAccountService();
+		AccountInfo info = service.getAccountInfo();
+		Trader t = new Trader(hitbtc);
 		Scanner reader = new Scanner(System.in);
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
 		int choice = Integer.valueOf(reader.next());
 		if(choice==999) {
-			getExchangeRates();
+			getExchangeRates(marketDataService, metaData, symbols);
 			Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
 			Vertex src = g.v0;
 			g.BellmanFord(g, src);
@@ -252,7 +193,7 @@ public class Main {
 			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
 			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
 			if(choiceToConvertBTCToCoins==888) {
-				getExchangeRates();
+				getExchangeRates(marketDataService, metaData, symbols);
 				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies:");
 				double amountBTCToConvert = Double.valueOf(reader.next());
 				t.convertBTCToCoins(amountBTCToConvert);
@@ -260,7 +201,7 @@ public class Main {
 			System.out.println("Would you like to equalize currencies for trading? Enter ANY NUMBER for no, 666 for yes");
 			int choiceToEqualize = Integer.valueOf(reader.next());
 			if(choiceToEqualize==666) {
-				getExchangeRates();
+				getExchangeRates(marketDataService, metaData, symbols);
 				Main.vertices.remove(findVertex("VEN"));
 				Main.vertices.remove(findVertex("HSR"));
 				t.getBalancesAndEqualize(0.002, 0.005);
@@ -275,7 +216,7 @@ public class Main {
 			int unexecutedCount = 0;
 			double maxRatios = 0;
 			while(true) {
-				getExchangeRates();
+				getExchangeRates(marketDataService, metaData, symbols);
 				Wallet w = t.info.getWallet();
 			    Balance bnbBalanceAll = w.getBalance(new Currency("bnb"));
 				BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();

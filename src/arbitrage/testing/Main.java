@@ -1,8 +1,10 @@
 package testing;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
@@ -21,12 +23,13 @@ import java.util.Scanner;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
+import com.opencsv.CSVWriter;
 
 import binance.Vertex;
 
 public class Main {
 	static LinkedHashMap<String,Integer> sigDigs;
-	
+
 	public Main() {
 		sigDigs = new LinkedHashMap<String,Integer>();
         String csvFile = "BinanceTradingRule-Master.csv";
@@ -103,10 +106,7 @@ public class Main {
 	}
 	
 	public static void main(String[] args) throws FileNotFoundException {
-		double zeroAmt = 26538.222;
-		int intAmt = (int) Math.ceil(zeroAmt);
-		System.out.println(intAmt);
-		
+		addDataToCSV("result.csv");
 //		final Type TOKEN_TYPE = new TypeToken<HashMap<String,Double>>() {}.getType();
 //		Gson gson = new Gson();
 //		JsonReader reader = new JsonReader(new FileReader("balances.json"));

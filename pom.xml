@@ -4,6 +4,11 @@
   <artifactId>arbitrage</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <dependencies>
+  <dependency>
+    <groupId>com.opencsv</groupId>
+    <artifactId>opencsv</artifactId>
+    <version>4.1</version>
+  </dependency>
 <!-- https://mvnrepository.com/artifact/info.bitrich.xchange-stream/xchange-stream-core -->
 <dependency>
     <groupId>info.bitrich.xchange-stream</groupId>
@@ -65,12 +70,17 @@
 	<dependency>
 	  <groupId>org.knowm.xchange</groupId>
 	  <artifactId>xchange-core</artifactId>
-	  <version>4.3.3</version>
+	  <version>4.3.9</version>
 	</dependency>
 	<dependency>
 	  <groupId>org.knowm.xchange</groupId>
 	  <artifactId>xchange-examples</artifactId>
 	  <version>4.3.3</version>
+	</dependency>
+	<dependency>
+	  <groupId>org.knowm.xchange</groupId>
+	  <artifactId>xchange-poloniex</artifactId>
+	  <version>4.3.9</version>
 	</dependency>
 	<dependency>
 	  <groupId>org.knowm.xchange</groupId>

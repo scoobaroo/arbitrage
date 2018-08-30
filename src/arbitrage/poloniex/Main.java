@@ -196,36 +196,6 @@ public class Main {
 		Main m = new Main();
 		Exchange poloniexExchange = new PoloniexExchange();
 		Trader t = new Trader(poloniexExchange);
-	    final WampClient client;
-	    try {
-	        WampClientBuilder builder = new WampClientBuilder();
-//	        IWampConnectorProvider connectorProvider = new NettyWampClientConnectorProvider();
-//	        builder.withConnectorProvider(connectorProvider)
-	        builder.withUri("wss://api.poloniex.com")
-	                .withRealm("realm1")
-	                .withInfiniteReconnects()
-	                .withReconnectInterval(5, TimeUnit.SECONDS);
-	        client = builder.build();
-	    } catch (Exception e) {
-	        return;
-	    }
-	    client.statusChanged().subscribe(new Action1<WampClient.State>() {
-	        @Override
-	        public void call(WampClient.State t1) {
-	            if (t1 instanceof WampClient.ConnectedState) {
-	                client.makeSubscription("trollbox")
-                        .subscribe((s) -> { 
-                        	System.out.println(s.arguments());
-                			System.out.println(s.details());
-                        });
-	                client.makeSubscription("ticker").
-		                subscribe((s) -> { 
-	                    	System.out.println(s.arguments());
-	            			System.out.println(s.details());
-	                    });
-	            }
-	        }
-	    });
 	}
 }
 //	    });
