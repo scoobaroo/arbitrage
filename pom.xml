@@ -3,7 +3,21 @@
   <groupId>arbitrage</groupId>
   <artifactId>arbitrage</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  
+  <repositories>
+	  <repository>
+	    <id>jitpack.io</id>
+	    <url>https://jitpack.io</url>
+	  </repository>
+	</repositories>
+  
   <dependencies>
+<dependency>
+  <groupId>com.github.binance-exchange</groupId>
+  <artifactId>binance-java-api</artifactId>
+  <version>master-SNAPSHOT</version>
+</dependency>
+
   <dependency>
     <groupId>com.opencsv</groupId>
     <artifactId>opencsv</artifactId>
@@ -50,11 +64,17 @@
 	    <version>1.4.9</version>
 	</dependency>
 	<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-	<dependency>
+<!-- 	<dependency>
 	    <groupId>com.fasterxml.jackson.core</groupId>
 	    <artifactId>jackson-core</artifactId>
 	    <version>2.9.4</version>
 	</dependency>
+	<dependency>
+    	<groupId>com.fasterxml.jackson.core</groupId>
+    	<artifactId>jackson-annotations</artifactId>
+    	<version>2.9.4</version>
+	</dependency> -->
+
 	<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
 	<dependency>
 	    <groupId>com.google.code.gson</groupId>

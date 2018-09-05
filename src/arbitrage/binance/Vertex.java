@@ -3,7 +3,7 @@ package binance;
 public class Vertex {
 	
 	protected CryptoCurrency cc;
-	protected String name;
+	public String name;
 	protected Vertex predecessor=null;
 	public Vertex(String name) {
 		this.name = name;

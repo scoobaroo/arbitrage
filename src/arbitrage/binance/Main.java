@@ -1,15 +1,23 @@
 package binance;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeFactory;
+import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.binance.BinanceExchange;
+import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
+import org.knowm.xchange.service.account.AccountService;
+import org.knowm.xchange.service.marketdata.MarketDataService;
+import org.knowm.xchange.service.trade.TradeService;
 import org.knowm.xchange.currency.Currency;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -20,7 +28,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = true;
-	static int buffer = 2;
+	static int buffer = 1;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected static ArrayList<Vertex> vertices;
@@ -37,8 +45,12 @@ public class Main {
 	protected double baseAmountBTC;
 	protected Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
 	protected org.json.JSONArray tickerArray;
+	static MarketDataService marketDataService;
+	static AccountService service;
+	static AccountInfo info;
+	static TradeService tradeService;
 	
-	private Main() {
+	private Main() throws IOException {
 		sigDigs = new LinkedHashMap<String,Integer> ();
 		sigDigsForPricing = new LinkedHashMap<String,Integer>();
 		transactionAmounts = new LinkedHashMap<String,Double>();
@@ -90,6 +102,36 @@ public class Main {
                 } catch (IOException e) { e.printStackTrace(); }
             }
         }
+		Properties prop = new Properties();
+		InputStream input = null;
+		String apiKey = "", apiSecret = "";
+		try {
+			input = new FileInputStream("/Users/suejanehan/workspace/binanceConfig.properties");
+			prop.load(input);
+//			System.out.println(prop.getProperty("apiKey"));
+//			System.out.println(prop.getProperty("apiSecret"));
+			apiKey = prop.getProperty("apiKey");
+			apiSecret = prop.getProperty("apiSecret");
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		ExchangeSpecification exSpec = new BinanceExchange().getDefaultExchangeSpecification();
+		exSpec.setUserName("mild.7.eric@gmail.com");
+		exSpec.setApiKey(apiKey);
+		exSpec.setSecretKey(apiSecret);
+		Exchange binance = ExchangeFactory.INSTANCE.createExchange(exSpec);
+		tradeService = binance.getTradeService();
+		marketDataService = binance.getMarketDataService();
+		service = binance.getAccountService();
+		info = service.getAccountInfo();
 	}
 	
 //	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
@@ -234,8 +276,10 @@ public class Main {
 	@SuppressWarnings("resource")
 	public static void main(String[] args) throws UnirestException, ParseException, IOException, InterruptedException{
 		Main m = new Main();
-		Exchange binanceExchange = new BinanceExchange();
-		ConservativeTrader t = new ConservativeTrader(binanceExchange);
+		ConservativeTrader t = new ConservativeTrader();
+	    Wallet wallet = info.getWallet();
+	    BigDecimal BTCbalance = wallet.getBalance(new Currency("BTC")).getTotal();
+	    System.out.println("BTC BALANCE ::::::: " + BTCbalance);
 //		Trader t = new Trader(binanceExchange);
 		Scanner reader = new Scanner(System.in);
 		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
@@ -286,6 +330,7 @@ public class Main {
 			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
 			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
 			    System.out.println("BTC AVAILABLE BALANCE: "+ btcBalanceAvailable);
+			    t.calculateAccountValue();
 	    		if(bnbBalanceAvailable.doubleValue()<1) {
 	    			System.out.println("REFILLING BNB!!!!!!");
 //	    			t.refillBnb();
@@ -300,7 +345,7 @@ public class Main {
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+buffer) * 0.00075; 
+			    double tradingFee = (g.bestCycle.size()+buffer) * 0.0005; 
 			    //0.03168059 BTC
 			    //0.03164910 BTC
 			    //0.03160409 BTC

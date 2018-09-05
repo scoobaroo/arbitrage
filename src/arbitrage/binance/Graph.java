@@ -11,12 +11,12 @@ public class Graph {
 	protected ArrayList<Vertex> vertices;
 	protected ArrayList<Edge> edges;
     protected ArrayList<Double> ratioList;
-    protected ArrayList<Vertex> bestCycle;
+    public ArrayList<Vertex> bestCycle;
     protected int cycleSize;
     protected double maxRatio;
     protected HashMap<Vertex, Double> dist;
     protected double inf = Double.POSITIVE_INFINITY;
-    protected Vertex v0;
+    public Vertex v0;
     
     public Graph(ArrayList<Vertex> vertices, ArrayList<Edge> edges, boolean debug) {
         super();

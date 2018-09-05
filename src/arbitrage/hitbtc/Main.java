@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.Map.Entry;
+
 import org.json.simple.parser.ParseException;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
@@ -19,6 +21,8 @@ import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
 import org.knowm.xchange.dto.meta.ExchangeMetaData;
 import org.knowm.xchange.hitbtc.v2.HitbtcExchange;
+import org.knowm.xchange.hitbtc.v2.dto.HitbtcTicker;
+import org.knowm.xchange.hitbtc.v2.service.HitbtcMarketDataServiceRaw;
 import org.knowm.xchange.service.account.AccountService;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.knowm.xchange.service.marketdata.params.Params;
@@ -30,10 +34,15 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
+import binance.Edge;
+import binance.Graph;
+import binance.Main;
+import binance.Vertex;
+
 
 public class Main {
-	static boolean debug = false;
-	static boolean trade = true;
+	static boolean debug = true;
+	static boolean trade = false;
 	static int buffer = 3;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
@@ -49,11 +58,9 @@ public class Main {
 	protected static HashMap<String, Vertex> vertexMap;
 	protected static HashSet<Vertex> setOfVertices;
 	protected double baseAmountBTC;
-	protected Vertex ETP, SAN, QTM, EDO, RRT, XRP, DSH, BT1, BT2, BCC, EUR, BCH, USD, QSH, EOS, OMG, IOT, BTC, BTG, ETC, BCU, DAT, YYW, ETH, ZEC, NEO, LTC, XMR, AVT;
-	protected org.json.JSONArray tickerArray;
 	
 	private Main() {
-		sigDigs = new LinkedHashMap<String,Integer> ();
+		sigDigs = new LinkedHashMap<String,Integer>();
 		sigDigsForPricing = new LinkedHashMap<String,Integer>();
 		transactionAmounts = new LinkedHashMap<String,Double>();
 		exchangeRates = new LinkedHashMap<String,Double>();
@@ -66,67 +73,86 @@ public class Main {
 		setOfEdges = new HashSet<Edge>();
 		edgeMap = new HashMap<String, Edge>();
 		vertexMap = new HashMap<String, Vertex>();
-		tickerArray = new org.json.JSONArray();
-        String csvFile = "BinanceTradingRule-Master.csv";
-        BufferedReader br = null;
-        String line = "";
-        try {
-            br = new BufferedReader(new FileReader(csvFile));
-            while ((line = br.readLine()) != null) {
-                String[] elements = line.split(",");
-                String symbol = elements[0].replace("/","");
-                sigDigs.put(symbol, Integer.valueOf(elements[1]));
-            }
-            System.out.println(sigDigs);
-        } catch (FileNotFoundException e) { e.printStackTrace(); } catch (IOException e) { e.printStackTrace(); } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) { e.printStackTrace(); }
-            }
-        }
-        String csvFile2 = "BinanceTradingRule-MinPrice.csv";
-        BufferedReader br2 = null;
-        String line2 = "";
-        try {
-            br2 = new BufferedReader(new FileReader(csvFile2));
-            while ((line2 = br2.readLine()) != null) {
-                String[] elements = line2.split(",");
-                String symbol = elements[0].replace("/","");
-                Integer sigDigit = Integer.valueOf(elements[2]);
-                sigDigsForPricing.put(symbol,sigDigit);
-            }
-            System.out.println(sigDigsForPricing);
-        } catch (FileNotFoundException e) { e.printStackTrace(); } catch (IOException e) { e.printStackTrace(); } finally {
-            if (br2 != null) {
-                try {
-                    br2.close();
-                } catch (IOException e) { e.printStackTrace(); }
-            }
-        }
 	}
-	
-//	private static String [] pairings = {"btcusd","ltcusd","ltcbtc","ethusd","ethbtc","etcbtc","etcusd","rrtusd","rrtbtc","zecusd","zecbtc","xmrusd",
-//	                                     "xmrbtc","dshusd","dshbtc","btceur","xrpusd","xrpbtc","iotusd","iotbtc","ioteth","eosusd","eosbtc","eoseth",
-//	                                     "sanusd","sanbtc","saneth","omgusd","omgbtc","omgeth","bchusd","bchbtc","bcheth","neousd","neobtc","neoeth",
-//	                                     "etpusd","etpbtc","etpeth","qtmusd","qtmbtc","qtmeth","avtusd","avtbtc","avteth","edousd","edobtc","edoeth",
-//	                                     "btgusd","btgbtc","datusd","datbtc","dateth","qshusd","qshbtc","qsheth","yywusd","yywbtc","yyweth","gntusd",
-//	                                     "gntbtc","gnteth","sntusd","sntbtc","snteth","ioteur","batusd","batbtc","bateth","mnausd","mnabtc","mnaeth",
-//	                                     "funusd","funbtc","funeth","zrxusd","zrxbtc","zrxeth","tnbusd","tnbbtc","tnbeth","spkusd","spkbtc","spketh",
-//	                                     "trxusd","trxbtc","trxeth","rcnusd","rcnbtc","rcneth","rlcusd","rlcbtc","rlceth","aidusd","aidbtc","aideth",
-//	                                     "sngusd","sngbtc","sngeth","repusd","repbtc","repeth","elfusd","elfbtc","elfeth"};
-//
 
-	public static void getExchangeRates(MarketDataService marketDataService, ExchangeMetaData metaData, List<CurrencyPair> symbols) throws UnirestException, InterruptedException, IOException {
-		Map<CurrencyPair, CurrencyPairMetaData> pairs = metaData.getCurrencyPairs();
-		System.out.println(symbols);
-		List<Ticker> tickers = marketDataService.getTickers((Params) symbols);
-		System.out.println(tickers);
-//		for(CurrencyPair sym:s) {
-//			Ticker ticker = marketDataService.getTicker(sym);
-//			System.out.println(ticker);
+	public static void getExchangeRates(HitbtcMarketDataServiceRaw marketDataServiceRaw, MarketDataService marketDataService, ExchangeMetaData metaData, List<CurrencyPair> symbols) throws UnirestException, InterruptedException, IOException {
+		Map<CurrencyPair, CurrencyPairMetaData> pairsData = metaData.getCurrencyPairs();
+//		for(Entry<CurrencyPair, CurrencyPairMetaData> data:pairsData.entrySet()){
+//			System.out.println(data);
 //		}
-
+//		System.out.println(symbols);
+		for(CurrencyPair symbol:symbols) {
+			String[] symbolArray = symbol.toString().split("/");
+			Vertex v1 = new Vertex(symbolArray[0]);
+			Vertex v2 = new Vertex(symbolArray[1]);
+			setOfVertices.add(v1);
+			setOfVertices.add(v2);
+		}
+		vertices = new ArrayList<Vertex>(setOfVertices);
+		System.out.println(vertices);
+		System.out.println(vertices.size());
+		Map<String, HitbtcTicker> tickers = marketDataServiceRaw.getHitbtcTickers();
+//		System.out.println(tickers);
+		for(Entry<String,HitbtcTicker> ticker: tickers.entrySet()) {
+//			System.out.println(ticker);
+			String symbol = ticker.getKey();
+			String symbol1 = symbol.substring(0, 3);
+			String symbol2 = symbol.substring(3);
+			String pairReversed;
+			Vertex v1;
+			Vertex v2;
+			HitbtcTicker tick = ticker.getValue();
+			System.out.println(tick);
+			Double ask;
+			Double bid;
+			if(!vertices.contains(findVertex(symbol1))){
+				symbol1 = symbol.substring(0,4);
+				System.out.println(symbol1);
+				if(!symbol1.equalsIgnoreCase("ABTC")) {
+					if(tick.getBid()!=null) {
+						bid = tick.getBid().doubleValue();
+					}else {
+						bid = tick.getLow().doubleValue();
+					}
+					if(tick.getAsk()!=null) {
+						ask = tick.getAsk().doubleValue();
+					} else {
+						ask = tick.getHigh().doubleValue();
+					}
+					symbol2 = symbol.substring(4);
+					v1 = findVertex(symbol1);
+					v2 = findVertex(symbol2);
+					pairReversed = symbol2+symbol1;
+					edgeMap.put(symbol, new Edge(v1, v2, -Math.log(bid) , bid));
+					edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
+					exchangeRates.put(symbol.toUpperCase(), bid);
+					exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
+				}
+			} else {
+				if(tick.getBid()!=null) {
+					bid = tick.getBid().doubleValue();
+				}else {
+					bid = tick.getLow().doubleValue();
+				}
+				if(tick.getAsk()!=null) {
+					ask = tick.getAsk().doubleValue();
+				} else {
+					ask = tick.getHigh().doubleValue();
+				}
+				v1 = findVertex(symbol1);
+				v2 = findVertex(symbol2);
+				pairReversed = symbol2+symbol1;
+				edgeMap.put(symbol, new Edge(v1, v2, -Math.log(bid) , bid));
+				edgeMap.put(pairReversed, new Edge(v2,v1, Math.log(ask), 1/ask));
+				exchangeRates.put(symbol.toUpperCase(), bid);
+				exchangeRates.put(pairReversed.toUpperCase(), 1/ask);
+			}
+		}	
+		System.out.println(edgeMap);
+		for(Edge e: edgeMap.values()) {
+			setOfEdges.add(e);
+		}
+		edges = new ArrayList<Edge>(setOfEdges);
 	}
 	
     public static Vertex findVertex(String name) {
@@ -156,8 +182,6 @@ public class Main {
 		try {
 			input = new FileInputStream("/Users/suejanehan/workspace/hitbtcConfig.properties");
 			prop.load(input);
-//			System.out.println(prop.getProperty("apiKey"));
-//			System.out.println(prop.getProperty("apiSecret"));
 			email = prop.getProperty("email");
 			apiKey = prop.getProperty("apiKey");
 			apiSecret = prop.getProperty("apiSecret");
@@ -172,125 +196,132 @@ public class Main {
 		exSpec.setSecretKey(apiSecret);
 		Exchange hitbtc = ExchangeFactory.INSTANCE.createExchange(exSpec);
 		MarketDataService marketDataService = hitbtc.getMarketDataService();
+		HitbtcMarketDataServiceRaw marketDataServiceRaw = new HitbtcMarketDataServiceRaw(hitbtc); 
 		ExchangeMetaData metaData = hitbtc.getExchangeMetaData();
 		List<CurrencyPair> symbols = hitbtc.getExchangeSymbols();
-		getExchangeRates(marketDataService, metaData, symbols);
-		AccountService service = hitbtc.getAccountService();
-		AccountInfo info = service.getAccountInfo();
-		Trader t = new Trader(hitbtc);
-		Scanner reader = new Scanner(System.in);
-		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
-		int choice = Integer.valueOf(reader.next());
-		if(choice==999) {
-			getExchangeRates(marketDataService, metaData, symbols);
-			Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
-			Vertex src = g.v0;
-			g.BellmanFord(g, src);
-			System.out.println("Enter percentage (0.xxx) of each currency you would like to sell:");
-			double ratio = Double.valueOf(reader.next());
-			t.convertCoinsToBTC(ratio);
-		} else {
-			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
-			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
-			if(choiceToConvertBTCToCoins==888) {
-				getExchangeRates(marketDataService, metaData, symbols);
-				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies:");
-				double amountBTCToConvert = Double.valueOf(reader.next());
-				t.convertBTCToCoins(amountBTCToConvert);
-			}
-			System.out.println("Would you like to equalize currencies for trading? Enter ANY NUMBER for no, 666 for yes");
-			int choiceToEqualize = Integer.valueOf(reader.next());
-			if(choiceToEqualize==666) {
-				getExchangeRates(marketDataService, metaData, symbols);
-				Main.vertices.remove(findVertex("VEN"));
-				Main.vertices.remove(findVertex("HSR"));
-				t.getBalancesAndEqualize(0.002, 0.005);
-			}
-			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
-			String baseAmountBTCString = reader.next();
-			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
-			reader.close();		    
-			clearAll();
-			//comment back to here for dialogs
-			int count = 0;
-			int unexecutedCount = 0;
-			double maxRatios = 0;
-			while(true) {
-				getExchangeRates(marketDataService, metaData, symbols);
-				Wallet w = t.info.getWallet();
-			    Balance bnbBalanceAll = w.getBalance(new Currency("bnb"));
-				BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
-				Balance ethBalanceAll = w.getBalance(new Currency("eth"));
-				BigDecimal ethBalanceAvailable = ethBalanceAll.getAvailable();
-				Balance btcBalanceAll = w.getBalance(new Currency("btc"));
-				BigDecimal btcBalanceAvailable = btcBalanceAll.getAvailable();
-			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
-			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
-			    System.out.println("BTC AVAILABLE BALANCE: "+ btcBalanceAvailable);
-	    		if(bnbBalanceAvailable.doubleValue()<1) {
-	    			System.out.println("REFILLING BNB!!!!!!");
-//	    			t.refillBnb();
-	    		}
-	    		if(ethBalanceAvailable.doubleValue()<0.05) {
-	    			System.out.println("REFILLING ETH!!!!!!");
-//	    			t.refillETH();
-	    		}
-				Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
-			    if (debug) {System.out.println(Main.symbols);}
-				// Just grabbing first vertex in vertices because we don't care about what source is.
-				Vertex src = g.v0;
-			    g.BellmanFord(g, src);
-			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+buffer) * 0.00075; 
-			    //0.03168059 BTC
-			    //0.03164910 BTC
-			    //0.03160409 BTC
-			    //0.03156073 BTC
-			    //0.03149407 BTC
-			    //0.03147615 BTC
-			    //0.03146342 BTC
-			    //0.03145775 BTC
-			    //0.03144331 BTC
-			    //0.03142991 BTC
-			    //0.03141825 BTC
-			    //0.03140468 BTC
-			    //0.03136730 BTC
-			    //0.03134911 BTC next starting value
-			    //0.03130317 BTC starting value
-	    		t.calculateCurrentMarketValueOfOldBalances();
-//				t.getHighestBalance();
-//				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
-//				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
-			    if((1+tradingFee)<g.maxRatio) {
-		    		maxRatios += g.maxRatio;
-		    		boolean tradeBool = t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
-		    		if(Main.trade) {
-		    			if(tradeBool) count++;
-		    			else unexecutedCount++;
-		    		}
-		    		double ratioAvg = maxRatios/count;
-		    		System.out.println("Average ratio so far: " + ratioAvg);
-		    		double profit = (g.maxRatio-(1+tradingFee)) * m.baseAmountBTC;
-		    		System.out.println("Profit made from this sequence: "+ profit + " BTC");
-			    }
-			    if(debug) {
-				    System.out.println(Main.exchangeRates);
-				    System.out.println("Size of exchange rates:" + Main.exchangeRates.size());
-				    System.out.println("Converting 1 BTC to ETH: " + CurrencyConverter.convertBTCToCoin("ETH", 1));
-				    System.out.println("Converting 1 ETH to BTC: " + CurrencyConverter.convertCoinToBTC("ETH", 1));
-				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertCoinToCoin("USDT", "BTC", 1));
-			    }
-	    		System.out.println("Number of trades executed so far: " + count);
-	    		System.out.println("Number of unexecuted trades executed so far: " + unexecutedCount);
-			    // Resetting parameters for new api query
-			    clearAll();
-				try {
-					Thread.sleep((long) .001);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-	}
+		getExchangeRates(marketDataServiceRaw, marketDataService, metaData, symbols);
+		Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+		Vertex src = g.v0;
+	    g.BellmanFord(g, src);
+	    ArrayList<Vertex> sequence = g.bestCycle;
+	    System.out.println(sequence);
+	} // DELETE THIS BRACKET AND UNCOMMENT ALL BELOW TO RESTORE TO BEFORE
+//		AccountService service = hitbtc.getAccountService();
+//		AccountInfo info = service.getAccountInfo();
+//		Trader t = new Trader(hitbtc);
+//		Scanner reader = new Scanner(System.in);
+//		System.out.println("Are you withdrawing or trading? (Enter ANY NUMBER for trading, 999 for withdrawing)");
+//		int choice = Integer.valueOf(reader.next());
+//		if(choice==999) {
+//			getExchangeRates(marketDataServiceRaw, marketDataService, metaData, symbols);
+//			Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+//			Vertex src = g.v0;
+//			g.BellmanFord(g, src);
+//			System.out.println("Enter percentage (0.xxx) of each currency you would like to sell:");
+//			double ratio = Double.valueOf(reader.next());
+//			t.convertCoinsToBTC(ratio);
+//		} else {
+//			System.out.println("Since you're trading, do you want to convert BTC to all available cryptocurrencies? Enter ANY NUMBER for no, 888 for yes");
+//			int choiceToConvertBTCToCoins = Integer.valueOf(reader.next());
+//			if(choiceToConvertBTCToCoins==888) {
+//				getExchangeRates(marketDataServiceRaw, marketDataService, metaData, symbols);
+//				System.out.println("Enter base amount(BTC) to convert to Cryptocurrencies:");
+//				double amountBTCToConvert = Double.valueOf(reader.next());
+//				t.convertBTCToCoins(amountBTCToConvert);
+//			}
+//			System.out.println("Would you like to equalize currencies for trading? Enter ANY NUMBER for no, 666 for yes");
+//			int choiceToEqualize = Integer.valueOf(reader.next());
+//			if(choiceToEqualize==666) {
+//				getExchangeRates(marketDataServiceRaw, marketDataService, metaData, symbols);
+//				Main.vertices.remove(findVertex("VEN"));
+//				Main.vertices.remove(findVertex("HSR"));
+//				t.getBalancesAndEqualize(0.002, 0.005);
+//			}
+//			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
+//			String baseAmountBTCString = reader.next();
+//			m.baseAmountBTC = Double.valueOf(baseAmountBTCString);
+//			reader.close();		    
+//			clearAll();
+//			//comment back to here for dialogs
+//			int count = 0;
+//			int unexecutedCount = 0;
+//			double maxRatios = 0;
+//			while(true) {
+//				getExchangeRates(marketDataServiceRaw, marketDataService, metaData, symbols);
+//				Wallet w = t.info.getWallet();
+//			    Balance bnbBalanceAll = w.getBalance(new Currency("bnb"));
+//				BigDecimal bnbBalanceAvailable = bnbBalanceAll.getAvailable();
+//				Balance ethBalanceAll = w.getBalance(new Currency("eth"));
+//				BigDecimal ethBalanceAvailable = ethBalanceAll.getAvailable();
+//				Balance btcBalanceAll = w.getBalance(new Currency("btc"));
+//				BigDecimal btcBalanceAvailable = btcBalanceAll.getAvailable();
+//			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
+//			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
+//			    System.out.println("BTC AVAILABLE BALANCE: "+ btcBalanceAvailable);
+//	    		if(bnbBalanceAvailable.doubleValue()<1) {
+//	    			System.out.println("REFILLING BNB!!!!!!");
+////	    			t.refillBnb();
+//	    		}
+//	    		if(ethBalanceAvailable.doubleValue()<0.05) {
+//	    			System.out.println("REFILLING ETH!!!!!!");
+////	    			t.refillETH();
+//	    		}
+//				Graph g = new Graph(Main.vertices, Main.edges, Main.debug);
+//			    if (debug) {System.out.println(Main.symbols);}
+//				// Just grabbing first vertex in vertices because we don't care about what source is.
+//				Vertex src = g.v0;
+//			    g.BellmanFord(g, src);
+//			    ArrayList<Vertex> sequence = g.bestCycle;
+//			    double tradingFee = (g.bestCycle.size()+buffer) * 0.00075; 
+//			    //0.03168059 BTC
+//			    //0.03164910 BTC
+//			    //0.03160409 BTC
+//			    //0.03156073 BTC
+//			    //0.03149407 BTC
+//			    //0.03147615 BTC
+//			    //0.03146342 BTC
+//			    //0.03145775 BTC
+//			    //0.03144331 BTC
+//			    //0.03142991 BTC
+//			    //0.03141825 BTC
+//			    //0.03140468 BTC
+//			    //0.03136730 BTC
+//			    //0.03134911 BTC next starting value
+//			    //0.03130317 BTC starting value
+//	    		t.calculateCurrentMarketValueOfOldBalances();
+////				t.getHighestBalance();
+////				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
+////				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
+//			    if((1+tradingFee)<g.maxRatio) {
+//		    		maxRatios += g.maxRatio;
+//		    		boolean tradeBool = t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
+//		    		if(Main.trade) {
+//		    			if(tradeBool) count++;
+//		    			else unexecutedCount++;
+//		    		}
+//		    		double ratioAvg = maxRatios/count;
+//		    		System.out.println("Average ratio so far: " + ratioAvg);
+//		    		double profit = (g.maxRatio-(1+tradingFee)) * m.baseAmountBTC;
+//		    		System.out.println("Profit made from this sequence: "+ profit + " BTC");
+//			    }
+//			    if(debug) {
+//				    System.out.println(Main.exchangeRates);
+//				    System.out.println("Size of exchange rates:" + Main.exchangeRates.size());
+//				    System.out.println("Converting 1 BTC to ETH: " + CurrencyConverter.convertBTCToCoin("ETH", 1));
+//				    System.out.println("Converting 1 ETH to BTC: " + CurrencyConverter.convertCoinToBTC("ETH", 1));
+//				    System.out.println("Converting 1 USD to BTC: " + CurrencyConverter.convertCoinToCoin("USDT", "BTC", 1));
+//			    }
+//	    		System.out.println("Number of trades executed so far: " + count);
+//	    		System.out.println("Number of unexecuted trades executed so far: " + unexecutedCount);
+//			    // Resetting parameters for new api query
+//			    clearAll();
+//				try {
+//					Thread.sleep((long) .001);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+//	}
 }

@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Map.Entry;
@@ -47,11 +48,9 @@ public class ConservativeTrader {
 	protected AccountInfo info;
 	protected AccountService service;
 	protected MarketDataService marketDataService;
-	protected Exchange exchange;
 	protected TradeService tradeService;
 	
-	public ConservativeTrader(Exchange exchange) throws IOException {
-		this.exchange = exchange;
+	public ConservativeTrader() throws IOException {
 		Properties prop = new Properties();
 		InputStream input = null;
 		String apiKey = "", apiSecret = "";
@@ -82,6 +81,17 @@ public class ConservativeTrader {
 		marketDataService = binance.getMarketDataService();
 		service = binance.getAccountService();
 		info = service.getAccountInfo();
+	}
+	
+	public void calculateAccountValue() {
+		Wallet w = info.getWallet();
+		Map<Currency,Balance> balances = w.getBalances();
+		for(Entry<Currency,Balance> entry: balances.entrySet()) {
+			Currency curr = entry.getKey();
+			Balance bal = entry.getValue();
+			System.out.println(curr.getSymbol());
+			System.out.println(bal.getTotal());
+		}
 	}
 	
 	public String calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
@@ -292,7 +302,7 @@ public class ConservativeTrader {
 	    		};
 	    		if(sigDig==0 ) {    //*|| sigDig ==2 //*) {
 	        		symbol = key1+key2;
-	    			System.out.println("we are filtering out " +symbol + " because its sigDig==0 or sigDig==2");
+	    			System.out.println("we are filtering out " +symbol + " because its sigDig==0");
 	    			return false;
 	    		}
 			}
@@ -363,23 +373,20 @@ public class ConservativeTrader {
 					try {
 						orderReturnVal = tradeService.placeLimitOrder(order);
 						System.out.println("Limit Order Return Value: " + orderReturnVal);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					} catch (IOException e) { e.printStackTrace(); }
 	    		}
 	    	}
 	    };
-	    Wallet wallet = info.getWallet();
-	    BigDecimal BTCbalance = wallet.getBalance(new Currency("BTC")).getTotal();
+	    Wallet w = info.getWallet();
+	    BigDecimal BTCbalance = w.getBalance(new Currency("btc")).getTotal();
 		String sequenceString = "";
 		for(Vertex v: sequence) {
 			sequenceString+= v.toString() + "  ";
 		}    
-		String CSV_FILE_PATH = "./result.csv";
+		String CSV_FILE_PATH = "./resultBuffer1.csv";
 		System.out.println(sequenceString);
 	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
-		LocalDateTime now = LocalDateTime.now();  
+		LocalDateTime now = LocalDateTime.now();
 		String dateTime = dtf.format(now).toString();
 		String marketValueOldBalances = calculateCurrentMarketValueOfOldBalances();
 		String[] data = {dateTime, sequenceString, BTCbalance.toString(), marketValueOldBalances, String.valueOf(Main.buffer), "BINANCE" };
