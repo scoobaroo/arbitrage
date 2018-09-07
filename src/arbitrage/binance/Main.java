@@ -28,7 +28,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = true;
-	static int buffer = 1;
+	static int buffer = 3;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected static ArrayList<Vertex> vertices;
@@ -307,7 +307,7 @@ public class Main {
 				getExchangeRates();
 				Main.vertices.remove(findVertex("VEN"));
 				Main.vertices.remove(findVertex("HSR"));
-				t.getBalancesAndEqualize(0.002, 0.005);
+				t.getBalancesAndEqualize(0.002, 0.01);
 			}
 			System.out.println("Enter base amount(BTC) to execute in trade sequences: ");	
 			String baseAmountBTCString = reader.next();
@@ -317,7 +317,6 @@ public class Main {
 			//comment back to here for dialogs
 			int count = 0;
 			int unexecutedCount = 0;
-			double maxRatios = 0;
 			while(true) {
 				getExchangeRates();
 				Wallet w = t.info.getWallet();
@@ -330,7 +329,6 @@ public class Main {
 			    System.out.println("BNB AVAILABLE BALANCE: "+  bnbBalanceAvailable);
 			    System.out.println("ETH AVAILABLE BALANCE: "+ ethBalanceAvailable);
 			    System.out.println("BTC AVAILABLE BALANCE: "+ btcBalanceAvailable);
-			    t.calculateAccountValue();
 	    		if(bnbBalanceAvailable.doubleValue()<1) {
 	    			System.out.println("REFILLING BNB!!!!!!");
 //	    			t.refillBnb();
@@ -362,18 +360,16 @@ public class Main {
 			    //0.03134911 BTC next starting value
 			    //0.03130317 BTC starting value
 	    		t.calculateCurrentMarketValueOfOldBalances();
+	    		t.calculateAccountValue();
 //				t.getHighestBalance();
 //				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
 //				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 			    if((1+tradingFee)<g.maxRatio) {
-		    		maxRatios += g.maxRatio;
 		    		boolean tradeBool = t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);
 		    		if(Main.trade) {
 		    			if(tradeBool) count++;
 		    			else unexecutedCount++;
 		    		}
-		    		double ratioAvg = maxRatios/count;
-		    		System.out.println("Average ratio so far: " + ratioAvg);
 		    		double profit = (g.maxRatio-(1+tradingFee)) * m.baseAmountBTC;
 		    		System.out.println("Profit made from this sequence: "+ profit + " BTC");
 			    }
@@ -390,10 +386,7 @@ public class Main {
 			    clearAll();
 				try {
 					Thread.sleep((long) .001);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				} catch (InterruptedException e) { e.printStackTrace(); }
 			}
 		}
 	}

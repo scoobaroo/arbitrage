@@ -83,15 +83,31 @@ public class ConservativeTrader {
 		info = service.getAccountInfo();
 	}
 	
-	public void calculateAccountValue() {
+	public String calculateAccountValue() {
 		Wallet w = info.getWallet();
 		Map<Currency,Balance> balances = w.getBalances();
+		double totalBalanceInUSD = 0.0;
+		double totalBalanceInBTC = 0.0;
 		for(Entry<Currency,Balance> entry: balances.entrySet()) {
 			Currency curr = entry.getKey();
-			Balance bal = entry.getValue();
-			System.out.println(curr.getSymbol());
-			System.out.println(bal.getTotal());
+//			if(!(curr.getSymbol().equals("CTR") || curr.getSymbol().equals("IQ") || curr.getSymbol().equals("123")
+//					|| curr.getSymbol().equals("BTM") || curr.getSymbol().equals("ONG") || curr.getSymbol().equals("VTHO")
+//					|| curr.getSymbol().equals("MEETONE") || curr.getSymbol().equals("ATD") || curr.getSymbol().equals("ELC"))) {
+//				
+			if(Main.vertices.contains(Main.findVertex(curr.getSymbol()))) {
+				Balance bal = entry.getValue();
+				if(!curr.getSymbol().equals("BTC")) {
+					double value = bal.getTotal().doubleValue() * Main.exchangeRatesMid.get(curr.getSymbol()+"BTC");
+					totalBalanceInBTC += value;
+				} else {
+					totalBalanceInBTC += bal.getTotal().doubleValue();
+				}
+			}
 		}
+		totalBalanceInUSD = totalBalanceInBTC * Main.exchangeRatesMid.get("BTCUSDT");
+		String s = "BINANCE ACCOUNT VALUE:" + totalBalanceInUSD + "USD, " +totalBalanceInBTC + "BTC";
+		System.out.println(s);
+		return s;
 	}
 	
 	public String calculateCurrentMarketValueOfOldBalances() throws FileNotFoundException {
@@ -278,10 +294,10 @@ public class ConservativeTrader {
 		System.out.println("refillBnb ReturnVal" + orderReturnVal);
 	}
 	
-	public boolean filterSequence(List<Vertex> sequence, double amountBTC) {
-		if(!sequence.get(0).toString().equals("BTC")) {
-			return false;
-		} else {
+	public boolean filterSequence(List<Vertex> sequence) {
+//		if(!sequence.get(0).toString().equals("BTC")) {
+//			return false;
+//		} else {
 			sequence.add(sequence.get(0));
 			System.out.println(sequence);
 			for(int i = 0; i< sequence.size()-1 ; i++) {
@@ -307,11 +323,11 @@ public class ConservativeTrader {
 	    		}
 			}
 			return true;
-		}
+//		}
 	}
 	
 	public boolean executeTradeSequenceWithList(ArrayList<Vertex> sequence, double amountBTC) throws FileNotFoundException{
-		boolean shouldTrade = filterSequence(sequence, amountBTC);
+		boolean shouldTrade = filterSequence(sequence);
 		if(!shouldTrade) {
 			return shouldTrade;
 		}
@@ -383,13 +399,14 @@ public class ConservativeTrader {
 		for(Vertex v: sequence) {
 			sequenceString+= v.toString() + "  ";
 		}    
-		String CSV_FILE_PATH = "./resultBuffer1.csv";
+		String CSV_FILE_PATH = "./resultBuffer3.csv";
 		System.out.println(sequenceString);
 	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
 		LocalDateTime now = LocalDateTime.now();
 		String dateTime = dtf.format(now).toString();
 		String marketValueOldBalances = calculateCurrentMarketValueOfOldBalances();
-		String[] data = {dateTime, sequenceString, BTCbalance.toString(), marketValueOldBalances, String.valueOf(Main.buffer), "BINANCE" };
+		String binanceAccountValue = calculateAccountValue();
+		String[] data = {dateTime, sequenceString, BTCbalance.toString(), marketValueOldBalances, binanceAccountValue, String.valueOf(Main.buffer), "BINANCE" };
 		Utilities.addDataToCSV(CSV_FILE_PATH, data);
 	    return shouldTrade;
 	}
