@@ -399,7 +399,7 @@ public class ConservativeTrader {
 		for(Vertex v: sequence) {
 			sequenceString+= v.toString() + "  ";
 		}    
-		String CSV_FILE_PATH = "./resultBuffer3.csv";
+		String CSV_FILE_PATH = "./resultBuffer4.csv";
 		System.out.println(sequenceString);
 	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
 		LocalDateTime now = LocalDateTime.now();

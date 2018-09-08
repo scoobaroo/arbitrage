@@ -28,7 +28,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = true;
-	static int buffer = 3;
+	static int buffer = 4;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected static ArrayList<Vertex> vertices;
@@ -370,8 +370,6 @@ public class Main {
 		    			if(tradeBool) count++;
 		    			else unexecutedCount++;
 		    		}
-		    		double profit = (g.maxRatio-(1+tradingFee)) * m.baseAmountBTC;
-		    		System.out.println("Profit made from this sequence: "+ profit + " BTC");
 			    }
 			    if(debug) {
 				    System.out.println(Main.exchangeRates);
