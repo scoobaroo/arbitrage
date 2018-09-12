@@ -28,7 +28,8 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 public class Main {
 	static boolean debug = false;
 	static boolean trade = true;
-	static int buffer = 4;
+	static int amountBuffer = 5;
+	static int sigDigBuffer = 2;
 	protected static LinkedHashMap<String,Integer> sigDigs;
 	protected static LinkedHashMap<String,Integer> sigDigsForPricing;	
 	protected static ArrayList<Vertex> vertices;
@@ -343,26 +344,10 @@ public class Main {
 				Vertex src = g.v0;
 			    g.BellmanFord(g, src);
 			    ArrayList<Vertex> sequence = g.bestCycle;
-			    double tradingFee = (g.bestCycle.size()+buffer) * 0.0005; 
-			    //0.03168059 BTC
-			    //0.03164910 BTC
-			    //0.03160409 BTC
-			    //0.03156073 BTC
-			    //0.03149407 BTC
-			    //0.03147615 BTC
-			    //0.03146342 BTC
-			    //0.03145775 BTC
-			    //0.03144331 BTC
-			    //0.03142991 BTC
-			    //0.03141825 BTC
-			    //0.03140468 BTC
-			    //0.03136730 BTC
-			    //0.03134911 BTC next starting value
-			    //0.03130317 BTC starting value
+			    double tradingFee = (g.bestCycle.size()+amountBuffer) * 0.0005; 
 	    		t.calculateCurrentMarketValueOfOldBalances();
 	    		t.calculateAccountValue();
 //				t.getHighestBalance();
-//				t.printCurrentMarketValueOfOldBalances(); // UNCOMMENT TO SEE VALUES OF OLD SNAPSHOT AT CURRENT EXCHANGE RATES
 //				t.getAccountSnapshot(); // UNCOMMENT THIS TO TAKE SNAPSHOT OF COIN BALANCES
 			    if((1+tradingFee)<g.maxRatio) {
 		    		boolean tradeBool = t.executeTradeSequenceWithList(sequence, m.baseAmountBTC);

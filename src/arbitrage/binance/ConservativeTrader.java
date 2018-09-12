@@ -316,7 +316,7 @@ public class ConservativeTrader {
 	    			sigDig = Main.sigDigs.get(symbol);
 	    			System.out.println(symbol + " got sigDig of " + sigDig);
 	    		};
-	    		if(sigDig==0 ) {    //*|| sigDig ==2 //*) {
+	    		if(sigDig < Main.sigDigBuffer ) {    // sigDigBuffer is 2 currently
 	        		symbol = key1+key2;
 	    			System.out.println("we are filtering out " +symbol + " because its sigDig==0");
 	    			return false;
@@ -399,14 +399,15 @@ public class ConservativeTrader {
 		for(Vertex v: sequence) {
 			sequenceString+= v.toString() + "  ";
 		}    
-		String CSV_FILE_PATH = "./resultBuffer4.csv";
+		String CSV_FILE_PATH = "./resultBuffer5.csv";
 		System.out.println(sequenceString);
 	    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
 		LocalDateTime now = LocalDateTime.now();
 		String dateTime = dtf.format(now).toString();
 		String marketValueOldBalances = calculateCurrentMarketValueOfOldBalances();
 		String binanceAccountValue = calculateAccountValue();
-		String[] data = {dateTime, sequenceString, BTCbalance.toString(), marketValueOldBalances, binanceAccountValue, String.valueOf(Main.buffer), "BINANCE" };
+		String[] data = {dateTime, sequenceString, BTCbalance.toString(), marketValueOldBalances, binanceAccountValue, 
+				String.valueOf(Main.amountBuffer), String.valueOf(Main.sigDigBuffer), "BINANCE" };
 		Utilities.addDataToCSV(CSV_FILE_PATH, data);
 	    return shouldTrade;
 	}
