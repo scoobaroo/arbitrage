@@ -1,4 +1,4 @@
-package binance;
+package arbitragebinance;
 
 import java.util.ArrayList;
 import java.util.Collections;

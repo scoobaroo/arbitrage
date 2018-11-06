@@ -1,4 +1,4 @@
-package binance;
+package arbitragebinance;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

@@ -18,6 +18,20 @@
   <version>master-SNAPSHOT</version>
 </dependency>
 
+<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+<dependency>
+    <groupId>commons-codec</groupId>
+    <artifactId>commons-codec</artifactId>
+    <version>1.9</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+    <version>2.9.4</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.graphstream/gs-core -->
+
   <dependency>
     <groupId>com.opencsv</groupId>
     <artifactId>opencsv</artifactId>

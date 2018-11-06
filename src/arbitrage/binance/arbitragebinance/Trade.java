@@ -1,4 +1,4 @@
-package binance;
+package arbitragebinance;
 import java.math.BigDecimal;
 
 import org.knowm.xchange.currency.CurrencyPair;

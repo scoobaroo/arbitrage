@@ -1,4 +1,4 @@
-package binance;
+package arbitragebinance;
 
 import java.util.HashMap;
 import java.util.Map;

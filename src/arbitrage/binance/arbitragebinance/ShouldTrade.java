@@ -1,4 +1,4 @@
-package binance;
+package arbitragebinance;
 
 public class ShouldTrade {
 	double amount;

@@ -1,4 +1,4 @@
-package binance;
+package arbitragebinance;
 
 import java.io.File;
 import java.io.FileInputStream;
